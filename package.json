@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "A simple postcard creation web app.",
   "main": "index.html",
+  "type": "module",
   "scripts": {
     "start": "serve",
     "build": "echo 'Build script added to trigger dependency installation on Vercel'"
