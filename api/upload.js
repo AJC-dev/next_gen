@@ -1,46 +1,42 @@
 import { put } from '@vercel/blob';
 
-// A helper function to convert the request stream into a Blob
-async function streamToBlob(stream) {
+// Helper function to stream request body to a buffer
+async function streamToBuffer(readableStream) {
   const chunks = [];
-  for await (const chunk of stream) {
+  for await (const chunk of readableStream) {
     chunks.push(chunk);
   }
-  return new Blob(chunks);
+  return Buffer.concat(chunks);
 }
 
-export default async function upload(request) {
-  const { searchParams } = new URL(request.url);
-  const filename = searchParams.get('filename');
-
-  if (!filename) {
-    return new Response(JSON.stringify({ message: 'No filename provided.' }), { status: 400 });
-  }
-  if (!request.body) {
-    return new Response(JSON.stringify({ message: 'No file body provided.' }), { status: 400 });
-  }
-
+export default async function upload(request, response) {
   try {
-    // Convert the incoming request stream into a complete Blob
-    const fileBlob = await streamToBlob(request.body);
+    // Construct the full URL from Vercel's request headers
+    const proto = request.headers['x-forwarded-proto'] || 'http';
+    const host = request.headers['x-forwarded-host'] || request.headers.host;
+    const fullUrl = new URL(request.url, `${proto}://${host}`);
+    
+    // Now, safely parse the filename from the full URL
+    const filename = fullUrl.searchParams.get('filename');
 
-    console.log(`Uploading file: ${filename}, Size: ${fileBlob.size} bytes`);
+    if (!filename) {
+      return response.status(400).json({ error: "Missing 'filename' query parameter." });
+    }
 
-    const blob = await put(filename, fileBlob, {
+    // Convert the streamed request body into a Buffer.
+    const fileBuffer = await streamToBuffer(request.body);
+
+    // Upload the file to Vercel Blob storage.
+    const blob = await put(filename, fileBuffer, {
       access: 'public',
     });
-    
-    console.log('Upload successful:', blob);
 
-    return new Response(JSON.stringify(blob), {
-      status: 200,
-    });
-    
+    // Respond with the blob's URL.
+    return response.status(200).json(blob);
+
   } catch (error) {
-    console.error('Error in upload function:', error);
-    return new Response(JSON.stringify({ message: 'Error uploading file.', error: error.message }), {
-      status: 500,
-    });
+    console.error('Upload failed:', error);
+    return response.status(500).json({ error: 'Failed to upload file.', details: error.message });
   }
 }
 
