@@ -350,7 +350,7 @@ function getHandlePositions(metrics) {
     return {
         size: {
             x: x + (resizeHandleRelX * cos - resizeHandleRelY * sin),
-            y: y + (resizeHandleRelY * sin + resizeHandleRelY * cos)
+            y: y + (resizeHandleRelX * sin + resizeHandleRelY * cos)
         },
         rotate: {
             x: x + (rotateHandleRelX * cos - rotateHandleRelY * sin),
@@ -400,6 +400,38 @@ function toggleAccordion(header, forceOpen = null) {
     }
 }
 
+function resetImagePreviews() {
+    appState.uploadedImage = null;
+    appState.imageSrcForResend = null;
+    appState.isPortrait = false;
+    resetImagePanAndZoom();
+    
+    // Reset front text when image is deleted
+    appState.frontText.text = '';
+    appState.frontText.x = null;
+    appState.frontText.y = null;
+    dom.frontText.input.value = '';
+    dom.frontText.profanityWarning.classList.add('hidden');
+    dom.ticks.two.classList.add('hidden');
+    dom.noThanksTextBtn.classList.remove('opacity-0', 'pointer-events-none');
+    
+    const container = dom.previewContainer;
+    container.classList.add('hidden');
+    
+    dom.imagePlaceholder.classList.remove('hidden');
+    dom.imageControls.classList.add('hidden');
+    dom.ticks.one.classList.add('hidden');
+    
+    // Also reset the preview container aspect ratio in section 5
+    dom.finalPreviewFrontContainer.classList.remove('aspect-[148/210]');
+    dom.finalPreviewFrontContainer.classList.add('aspect-[210/148]');
+
+    if (dom.finalPreviewFront.src) { URL.revokeObjectURL(dom.finalPreviewFront.src); dom.finalPreviewFront.src = ''; }
+    
+    // This is the key change. Call updatePostcardLayout to resize the canvas and redraw.
+    updatePostcardLayout(); 
+}
+
 async function generatePostcardImages({ forEmail = false } = {}) {
     await document.fonts.ready;
 
@@ -414,18 +446,29 @@ async function generatePostcardImages({ forEmail = false } = {}) {
         frontCanvas.width = longEdgePx;
         frontCanvas.height = shortEdgePx;
         const frontCtx = frontCanvas.getContext('2d');
-        const scaleFactor = longEdgePx / (appState.isPortrait ? dom.previewCanvas.el.height : dom.previewCanvas.el.width);
 
         if (appState.uploadedImage) {
             if (appState.isPortrait) {
-                // Rotate the context to draw the portrait content onto the landscape canvas
+                // Create a temporary canvas for the portrait content
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = shortEdgePx;
+                tempCanvas.height = longEdgePx;
+                const tempCtx = tempCanvas.getContext('2d');
+                const scaleFactor = tempCanvas.width / dom.previewCanvas.el.width;
+                
+                // Draw the portrait content onto the temporary canvas
+                drawCleanFrontOnContext(tempCtx, tempCanvas.width, tempCanvas.height, scaleFactor);
+
+                // Now, draw the rotated temporary canvas onto the final landscape canvas
                 frontCtx.save();
                 frontCtx.translate(longEdgePx / 2, shortEdgePx / 2);
                 frontCtx.rotate(90 * Math.PI / 180);
-                frontCtx.translate(-shortEdgePx / 2, -longEdgePx / 2);
-                drawCleanFrontOnContext(frontCtx, shortEdgePx, longEdgePx, scaleFactor);
+                frontCtx.drawImage(tempCanvas, -tempCanvas.height / 2, -tempCanvas.width / 2);
                 frontCtx.restore();
+
             } else {
+                // For landscape, draw directly
+                const scaleFactor = longEdgePx / dom.previewCanvas.el.width;
                 drawCleanFrontOnContext(frontCtx, longEdgePx, shortEdgePx, scaleFactor);
             }
         } else {
@@ -800,6 +843,89 @@ async function fetchConfig() {
     }
 }
 
+async function resizeImage(base64Str) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.src = base64Str;
+        img.onload = () => {
+            const maxDimension = 2400;
+            let { width, height } = img;
+
+            if (width > maxDimension || height > maxDimension) {
+                if (width > height) {
+                    height = Math.round((height * maxDimension) / width);
+                    width = maxDimension;
+                } else {
+                    width = Math.round((width * maxDimension) / height);
+                    height = maxDimension;
+                }
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', 0.8));
+        };
+        img.onerror = (error) => {
+            console.error("Error loading image for resizing:", error);
+            reject(error);
+        };
+    });
+}
+
+function updatePostcardLayout() {
+    const canvas = dom.previewCanvas.el;
+    const container = dom.previewContainer;
+    
+    container.classList.remove('aspect-[210/148]', 'aspect-[148/210]');
+
+    if (appState.isPortrait) {
+        container.classList.add('aspect-[148/210]');
+    } else {
+        container.classList.add('aspect-[210/148]');
+    }
+
+    requestAnimationFrame(() => {
+        canvas.width = container.clientWidth;
+        canvas.height = container.clientHeight;
+        drawPreviewCanvas();
+        debouncedUpdateAllPreviews();
+    });
+}
+
+async function validateAndSetImage(src) {
+        const tempImage = new Image();
+        await new Promise((resolve, reject) => { 
+        tempImage.crossOrigin = "Anonymous";
+        tempImage.onload = resolve; 
+        tempImage.onerror = reject; 
+        tempImage.src = src; 
+    });
+
+    if (tempImage.width < appConfig.minImageDimension || tempImage.height < appConfig.minImageDimension) {
+        dom.imageWarning.textContent = `For best quality, please upload an image that is at least ${appConfig.minImageDimension}px on its shortest side.`;
+        dom.imageWarning.classList.remove('hidden');
+        dom.imageUploader.value = '';
+        resetImagePreviews();
+    } else {
+        dom.imageWarning.classList.add('hidden');
+        appState.uploadedImage = tempImage;
+        appState.imageSrcForResend = src;
+        
+        appState.isPortrait = tempImage.height > tempImage.width;
+        resetImagePanAndZoom();
+
+        dom.imagePlaceholder.classList.add('hidden');
+        dom.previewContainer.classList.remove('hidden');
+        dom.imageControls.classList.remove('hidden');
+        dom.ticks.one.classList.remove('hidden');
+        
+        updatePostcardLayout();
+    }
+}
+
 async function initialize() {
     applyConfiguration();
     await fetchConfig();
@@ -1089,3 +1215,4 @@ async function initialize() {
 }
 
 initialize();
+
