@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title id="page-title"></title>
-    <link id="favicon" rel="icon" type="image/x-icon" href="" />
+    <title>SixStarCruises- Send Free Postcards</title>
+    <link id="favicon" rel="icon" type="image/x-icon" href="ssc_favicon.ico" />
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/masonry-layout@4/dist/masonry.pkgd.min.js" async></script>
@@ -43,8 +43,8 @@
                             </button>
                         </div>
                         <div id="zoom-controls" class="absolute bottom-2 right-2 flex flex-col gap-1">
-                            <button id="zoom-in-btn" class="w-8 h-8 flex items-center justify-center bg-black bg-opacity-50 hover:bg-opacity-75 text-white font-bold rounded-full text-lg">+</button>
-                            <button id="zoom-out-btn" class="w-8 h-8 flex items-center justify-center bg-black bg-opacity-50 hover:bg-opacity-75 text-white font-bold rounded-full text-lg">-</button>
+                            <button id="zoom-in-btn" class="zoom-control w-8 h-8 flex items-center justify-center bg-black bg-opacity-50 hover:bg-opacity-75 text-white font-bold rounded-full text-lg">+</button>
+                            <button id="zoom-out-btn" class="zoom-control w-8 h-8 flex items-center justify-center bg-black bg-opacity-50 hover:bg-opacity-75 text-white font-bold rounded-full text-lg">-</button>
                         </div>
                     </div>
                     <div id="image-placeholder" class="flex flex-col items-center justify-center gap-4 py-6 sm:py-10">
@@ -163,8 +163,8 @@
             </div>
             <input type="text" id="sender-name" placeholder="Enter Name" class="p-2 border rounded-lg mt-4" required>
             <input type="email" id="sender-email" placeholder="Enter Email Address" class="p-2 border rounded-lg mt-2" required>
+             <p id="sender-error-message" class="text-red-500 text-sm mt-2 text-center hidden"></p>
             <div id="recaptcha-container" class="my-4 flex justify-center"></div>
-            <p id="sender-error-message" class="text-red-500 text-sm mb-2 hidden"></p>
             <button id="final-send-btn" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2">
                 <span class="btn-text">Send</span>
             </button>
@@ -195,9 +195,8 @@
         <img id="zoomed-image" src="" class="max-w-[90vw] max-h-[90vh] object-contain">
         <button id="close-zoom-modal-btn" class="absolute top-4 right-4 text-white text-3xl font-bold">&times;</button>
     </div>
-    
+
     <script src="config.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
-
