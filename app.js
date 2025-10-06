@@ -1,5 +1,5 @@
 // --- CONFIGURATION ---
-const config = {
+const appConfig = {
     recaptchaSiteKey: '', // Fetched from server
     pixabayApiKey: '', // Fetched from server
     minImageDimension: 800,
@@ -34,6 +34,12 @@ const appState = {
 
 // --- DOM ELEMENT REFERENCES ---
 const dom = {
+    favicon: document.getElementById('favicon'),
+    mainTitle: document.getElementById('main-title'),
+    subtitle: document.getElementById('subtitle'),
+    uploadButton: document.getElementById('upload-button'),
+    findImageButton: document.getElementById('find-image-button'),
+    sendPostcardBtn: document.getElementById('send-postcard-btn'),
     accordionHeaders: document.querySelectorAll('.accordion-header'),
     imageUploader: document.getElementById('image-uploader'),
     imagePlaceholder: document.getElementById('image-placeholder'),
@@ -41,7 +47,7 @@ const dom = {
     imageWarning: document.getElementById('image-warning'),
     imageControls: document.getElementById('image-controls'),
     deleteImageBtn: document.getElementById('delete-image-btn'),
-    zoomControls: document.getElementById('zoom-controls'),
+    zoomControls: document.querySelectorAll('.zoom-control'),
     zoomInBtn: document.getElementById('zoom-in-btn'),
     zoomOutBtn: document.getElementById('zoom-out-btn'),
     previewCanvas: {
@@ -66,7 +72,6 @@ const dom = {
     finalPreviewFrontContainer: document.getElementById('final-preview-front-container'),
     finalPreviewFront: document.getElementById('final-preview-front'),
     finalPreviewBack: document.getElementById('final-preview-back'),
-    sendPostcardBtn: document.getElementById('send-postcard-btn'),
     sender: { 
         modal: document.getElementById('sender-modal'), 
         detailsView: document.getElementById('sender-details-view'),
@@ -86,37 +91,33 @@ const dom = {
         three: document.getElementById('tick-3'),
         four: document.getElementById('tick-4')
     },
-    noThanksTextBtn: document.getElementById('no-thanks-text-btn'),
-    // New elements for configuration
-    mainTitle: document.getElementById('main-title'),
-    subtitle: document.getElementById('subtitle'),
-    uploadButton: document.getElementById('upload-button'),
-    findImageButton: document.getElementById('find-image-button'),
+    noThanksTextBtn: document.getElementById('no-thanks-text-btn')
 };
 
 // --- CORE LOGIC ---
 
 function applyConfiguration() {
-    // Apply text and colors from siteConfig
-    if (window.siteConfig) {
-        dom.mainTitle.textContent = siteConfig.mainTitle;
-        dom.mainTitle.style.color = siteConfig.mainTitleColor;
-
-        // Construct subtitle with link
-        dom.subtitle.textContent = siteConfig.subtitle;
-        const link = document.createElement('a');
-        link.href = siteConfig.subtitleLinkUrl;
-        link.textContent = siteConfig.subtitleLinkText;
-        link.target = "_blank";
-        link.className = "font-bold hover:underline";
-        link.style.color = siteConfig.subtitleLinkColor;
-        dom.subtitle.appendChild(link);
-
-        // Apply button colors
-        dom.uploadButton.style.backgroundColor = siteConfig.uploadButtonBgColor;
-        dom.findImageButton.style.backgroundColor = siteConfig.findImageButtonBgColor;
-        dom.sendPostcardBtn.style.backgroundColor = siteConfig.sendPostcardButtonBgColor;
+    if (typeof postcardConfig === 'undefined') {
+        console.error("Configuration file (config.js) not found or loaded.");
+        return;
     }
+    
+    // Apply Page Title and Favicon
+    document.title = postcardConfig.content.pageTitle;
+    dom.favicon.href = postcardConfig.content.faviconURL;
+
+    // Apply Text Content
+    dom.mainTitle.textContent = postcardConfig.content.mainTitle;
+    dom.mainTitle.style.color = postcardConfig.styles.titleColor;
+
+    // Build and apply subtitle with link
+    const subtitleLink = `<a href="${postcardConfig.content.subtitleLinkURL}" target="_blank" class="font-bold hover:underline" style="color: ${postcardConfig.styles.subtitleLinkColor};">${postcardConfig.content.subtitleLinkText}</a>`;
+    dom.subtitle.innerHTML = `${postcardConfig.content.subtitleText} ${subtitleLink}.`;
+
+    // Apply Button Styles
+    dom.uploadButton.style.backgroundColor = postcardConfig.styles.uploadButtonColor;
+    dom.findImageButton.style.backgroundColor = postcardConfig.styles.findImageButtonColor;
+    dom.sendPostcardBtn.style.backgroundColor = postcardConfig.styles.sendPostcardButtonColor;
 }
 
 async function checkForProfanityAPI(text, warningElement) {
@@ -150,12 +151,12 @@ async function checkForProfanityAPI(text, warningElement) {
     }
 }
 
-function drawCoverImage(ctx, img, canvasWidth, canvasHeight, offsetX, offsetY, zoom, bleedPx = 0) {
-    // This function now correctly calculates the source image crop to perfectly fit the target canvas aspect ratio, preventing black bars.
+function drawCoverImage(ctx, img, canvasWidth, canvasHeight, offsetX, offsetY, zoom) {
     const canvasAspect = canvasWidth / canvasHeight;
     const imgAspect = img.width / img.height;
 
     let sWidth, sHeight;
+
     if (imgAspect > canvasAspect) {
         sHeight = img.height;
         sWidth = sHeight * canvasAspect;
@@ -167,38 +168,42 @@ function drawCoverImage(ctx, img, canvasWidth, canvasHeight, offsetX, offsetY, z
     sWidth /= zoom;
     sHeight /= zoom;
 
-    // Pan needs to be scaled relative to how much of the image is being shown.
-    // When zoomed in (sWidth is smaller), pan effect should be greater.
-    const panScale = sWidth / (canvasWidth - bleedPx * 2);
+    let sx = (img.width - sWidth) / 2;
+    let sy = (img.height - sHeight) / 2;
 
-    let sx = (img.width - sWidth) / 2 - (offsetX * panScale);
-    let sy = (img.height - sHeight) / 2 - (offsetY * panScale);
-
-    sx = Math.max(0, Math.min(sx, img.width - sWidth));
-    sy = Math.max(0, Math.min(sy, img.height - sHeight));
+    const panScaleFactor = sWidth / canvasWidth;
+    sx -= offsetX * panScaleFactor;
+    sy -= offsetY * panScaleFactor;
+    
+    const maxSx = img.width - sWidth;
+    const maxSy = img.height - sHeight;
+    sx = Math.max(0, Math.min(sx, maxSx));
+    sy = Math.max(0, Math.min(sy, maxSy));
 
     ctx.drawImage(img, sx, sy, sWidth, sHeight, 0, 0, canvasWidth, canvasHeight);
 }
 
-function drawCleanFrontOnContext(ctx, width, height, bleedPx) {
-    const scaleFactor = (width - bleedPx * 2) / (appState.isPortrait ? dom.previewCanvas.el.height : dom.previewCanvas.el.width);
-
+function drawCleanFrontOnContext(ctx, width, height, scaleFactor, bleedPx = { x: 0, y: 0 }) {
     if (appState.uploadedImage) {
-        drawCoverImage(ctx, appState.uploadedImage, width, height, appState.imageOffsetX, appState.imageOffsetY, appState.imageZoom, bleedPx);
+        ctx.save();
+        ctx.translate(bleedPx.x, bleedPx.y); // Account for bleed offset
+        const scaledOffsetX = appState.imageOffsetX * scaleFactor;
+        const scaledOffsetY = appState.imageOffsetY * scaleFactor;
+        drawCoverImage(ctx, appState.uploadedImage, width, height, scaledOffsetX, scaledOffsetY, appState.imageZoom);
+        ctx.restore();
     }
     
     if (appState.frontText.text) {
         const { text, font, size, color, x, y, rotation, width: textWidth } = appState.frontText;
+        
         ctx.save();
         ctx.fillStyle = color;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         
-        const rotatedCanvasWidth = appState.isPortrait ? dom.previewCanvas.el.height : dom.previewCanvas.el.width;
-        const rotatedCanvasHeight = appState.isPortrait ? dom.previewCanvas.el.width : dom.previewCanvas.el.height;
-
-        const textX = (x / rotatedCanvasWidth) * (width - bleedPx * 2) + bleedPx;
-        const textY = (y / rotatedCanvasHeight) * (height - bleedPx * 2) + bleedPx;
+        // Adjust text position relative to the main content area (not the bleed)
+        const textX = (x * scaleFactor) + bleedPx.x;
+        const textY = (y * scaleFactor) + bleedPx.y;
 
         ctx.translate(textX, textY);
         ctx.rotate(rotation * Math.PI / 180);
@@ -210,20 +215,21 @@ function drawCleanFrontOnContext(ctx, width, height, bleedPx) {
 function drawPreviewCanvas() {
     const canvas = dom.previewCanvas.el;
     const ctx = canvas.getContext('2d');
-    const bleedPx = (config.bleedMM / config.a5WidthMM) * canvas.width;
-
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     if (appState.uploadedImage) {
-        drawCoverImage(ctx, appState.uploadedImage, canvas.width, canvas.height, appState.imageOffsetX, appState.imageOffsetY, appState.imageZoom, 0);
+        drawCoverImage(ctx, appState.uploadedImage, canvas.width, canvas.height, appState.imageOffsetX, appState.imageOffsetY, appState.imageZoom);
     }
-    
-    // Draw safety zone
+
+    // Draw Safety Zone
+    ctx.save();
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
     ctx.lineWidth = 1;
     ctx.setLineDash([5, 5]);
-    ctx.strokeRect(bleedPx, bleedPx, canvas.width - 2 * bleedPx, canvas.height - 2 * bleedPx);
-    ctx.setLineDash([]);
+    const safetyMarginX = (appConfig.bleedMM / appConfig.a5WidthMM) * canvas.width;
+    const safetyMarginY = (appConfig.bleedMM / appConfig.a5HeightMM) * canvas.height;
+    ctx.strokeRect(safetyMarginX, safetyMarginY, canvas.width - 2 * safetyMarginX, canvas.height - 2 * safetyMarginY);
+    ctx.restore();
 
 
     if (appState.frontText.text) {
@@ -261,7 +267,7 @@ function drawPreviewCanvas() {
 
         Object.values(handles).forEach(handle => {
             ctx.beginPath();
-            ctx.arc(handle.x, handle.y, config.handleRadius, 0, 2 * Math.PI);
+            ctx.arc(handle.x, handle.y, appConfig.handleRadius, 0, 2 * Math.PI);
             ctx.fill();
             ctx.stroke();
         });
@@ -344,13 +350,13 @@ function getHandlePositions(metrics) {
     return {
         size: {
             x: x + (resizeHandleRelX * cos - resizeHandleRelY * sin),
-            y: y + (resizeHandleRelX * sin + resizeHandleRelY * cos)
+            y: y + (resizeHandleRelY * sin + resizeHandleRelY * cos)
         },
         rotate: {
             x: x + (rotateHandleRelX * cos - rotateHandleRelY * sin),
             y: y + (rotateHandleRelY * sin + rotateHandleRelY * cos)
         },
-         width: {
+            width: {
             x: x + (widthHandleRelX * cos - widthHandleRelY * sin),
             y: y + (widthHandleRelY * sin + widthHandleRelY * cos)
         }
@@ -387,8 +393,8 @@ function toggleAccordion(header, forceOpen = null) {
     
     const wasOpened = content.classList.contains('open');
     if (wasOpened) {
-         if (header.id.startsWith('accordion-header-5')) debouncedUpdateAllPreviews();
-         if (header.id.startsWith('accordion-header-3') && dom.textInput.value === '') {
+            if (header.id.startsWith('accordion-header-5')) debouncedUpdateAllPreviews();
+            if (header.id.startsWith('accordion-header-3') && dom.textInput.value === '') {
             typePlaceholder(dom.textInput, "Write your message or copy and paste here..");
         }
     }
@@ -453,16 +459,16 @@ function resetImagePanAndZoom() {
 }
 
 async function validateAndSetImage(src) {
-     const tempImage = new Image();
-     await new Promise((resolve, reject) => { 
+        const tempImage = new Image();
+        await new Promise((resolve, reject) => { 
         tempImage.crossOrigin = "Anonymous";
         tempImage.onload = resolve; 
         tempImage.onerror = reject; 
         tempImage.src = src; 
     });
 
-    if (tempImage.width < config.minImageDimension || tempImage.height < config.minImageDimension) {
-        dom.imageWarning.textContent = `For best quality, please upload an image that is at least ${config.minImageDimension}px on its shortest side.`;
+    if (tempImage.width < appConfig.minImageDimension || tempImage.height < appConfig.minImageDimension) {
+        dom.imageWarning.textContent = `For best quality, please upload an image that is at least ${appConfig.minImageDimension}px on its shortest side.`;
         dom.imageWarning.classList.remove('hidden');
         dom.imageUploader.value = '';
         resetImagePreviews();
@@ -518,7 +524,7 @@ async function checkMessageOverflow() {
     await document.fonts.ready;
     const tempCanvas = document.createElement('canvas');
     const tempCtx = tempCanvas.getContext('2d');
-    const finalWidthPx = Math.round((config.a5WidthMM / 25.4) * config.printDPI);
+    const finalWidthPx = Math.round((appConfig.a5WidthMM / 25.4) * appConfig.printDPI);
     const fontSize = dom.fontSizeSlider.value;
     const fontWeight = dom.fontWeightSlider.value;
     const hiResFontSize = fontSize * (finalWidthPx / 504) * 1.2;
@@ -529,7 +535,7 @@ async function checkMessageOverflow() {
     const messageText = dom.textInput.value;
     const lines = messageText.split('\n');
     let totalHeight = 0;
-    const messageMaxWidth = ((finalWidthPx / 2) - 100) + 170; // Adjusted width
+    const messageMaxWidth = (finalWidthPx / 2) + 70; // Adjusted for new line position
 
     lines.forEach(line => {
         const words = line.split(' ');
@@ -547,7 +553,7 @@ async function checkMessageOverflow() {
         totalHeight += lineHeight;
     });
 
-    const maxTextHeight = Math.round((config.a5HeightMM / 25.4) * config.printDPI) - (hiResFontSize * 1.2) - 50;
+    const maxTextHeight = Math.round((appConfig.a5HeightMM / 25.4) * appConfig.printDPI) - (hiResFontSize * 1.2) - 50;
     if (totalHeight > maxTextHeight) {
         dom.messageWarning.classList.remove('hidden');
     } else {
@@ -555,93 +561,63 @@ async function checkMessageOverflow() {
     }
 }
 
-async function generatePostcardImages({ includeAddressOnImage = true, forPrint = false } = {}) {
-    await document.fonts.ready; 
+async function generatePostcardImages({ forEmail = false } = {}) {
+    await document.fonts.ready;
 
     const MM_TO_INCH = 25.4;
-    const bleedPxForPrint = forPrint ? Math.round((config.bleedMM / MM_TO_INCH) * config.printDPI) : 0;
-    
-    let isFinalPortraitForCanvas = appState.isPortrait;
-    if (!forPrint && appState.isPortrait) {
-        isFinalPortraitForCanvas = false;
-    }
+    const bleedPxTotal = Math.round((appConfig.bleedMM * 2 / MM_TO_INCH) * appConfig.printDPI);
 
-    const A5_RATIO = config.a5WidthMM / config.a5HeightMM; 
+    const mainContentWidthPx = Math.round((appConfig.a5WidthMM / MM_TO_INCH) * appConfig.printDPI);
+    const mainContentHeightPx = Math.round((appConfig.a5HeightMM / MM_TO_INCH) * appConfig.printDPI);
 
-    let finalWidthPx, finalHeightPx;
-    
-    if (forPrint) {
-        // --- High-res logic for printing ---
-        const coreWidthPx = Math.round((isFinalPortraitForCanvas ? config.a5HeightMM : config.a5WidthMM) / MM_TO_INCH * config.printDPI);
-        const coreHeightPx = Math.round((isFinalPortraitForCanvas ? config.a5WidthMM : config.a5HeightMM) / MM_TO_INCH * config.printDPI);
-
-        finalWidthPx = coreWidthPx + (bleedPxForPrint * 2);
-        finalHeightPx = coreHeightPx + (bleedPxForPrint * 2);
-    } else {
-        // --- Low-res logic for screen preview ---
-        const previewBaseWidth = 1000;
-        if (isFinalPortraitForCanvas) {
-            finalWidthPx = Math.round(previewBaseWidth / A5_RATIO);
-            finalHeightPx = previewBaseWidth;
-        } else {
-            finalWidthPx = previewBaseWidth;
-            finalHeightPx = Math.round(previewBaseWidth / A5_RATIO);
-        }
-    }
-
+    const frontCanvasWidth = appState.isPortrait ? mainContentHeightPx + bleedPxTotal : mainContentWidthPx + bleedPxTotal;
+    const frontCanvasHeight = appState.isPortrait ? mainContentWidthPx + bleedPxTotal : mainContentHeightPx + bleedPxTotal;
 
     const frontCanvas = document.createElement('canvas');
-    frontCanvas.width = finalWidthPx;
-    frontCanvas.height = finalHeightPx;
+    frontCanvas.width = frontCanvasWidth;
+    frontCanvas.height = frontCanvasHeight;
     const frontCtx = frontCanvas.getContext('2d');
-    
-    if (appState.uploadedImage) {
-        if (!forPrint && appState.isPortrait) {
-            frontCtx.save();
-            frontCtx.translate(finalWidthPx / 2, finalHeightPx / 2);
-            frontCtx.rotate(90 * Math.PI / 180);
-            frontCtx.translate(-finalHeightPx / 2, -finalWidthPx / 2); 
-            
-            drawCleanFrontOnContext(frontCtx, finalHeightPx, finalWidthPx, 0);
 
-            frontCtx.restore();
-        } else {
-            drawCleanFrontOnContext(frontCtx, finalWidthPx, finalHeightPx, bleedPxForPrint);
-        }
+    if (appState.uploadedImage) {
+        const bleedOffset = bleedPxTotal / 2;
+        const scaleFactor = (appState.isPortrait ? mainContentHeightPx : mainContentWidthPx) / dom.previewCanvas.el.width;
+
+        drawCleanFrontOnContext(
+            frontCtx,
+            appState.isPortrait ? mainContentHeightPx : mainContentWidthPx,
+            appState.isPortrait ? mainContentWidthPx : mainContentHeightPx,
+            scaleFactor,
+            { x: bleedOffset, y: bleedOffset }
+        );
     } else {
-        frontCtx.fillStyle = '#6b7280'; 
-        frontCtx.font = '80px Inter';
-        frontCtx.textAlign = 'center';
-        frontCtx.fillText('Waiting for your masterpiece..', finalWidthPx / 2, finalHeightPx / 2);
+        frontCtx.fillStyle = '#FFFFFF';
+        frontCtx.fillRect(0, 0, frontCanvasWidth, frontCanvasHeight);
     }
 
-    const backFinalWidthPx = Math.round((config.a5WidthMM / MM_TO_INCH) * config.printDPI);
-    const backFinalHeightPx = Math.round((config.a5HeightMM / MM_TO_INCH) * config.printDPI);
-    
     const backCanvas = document.createElement('canvas');
-    backCanvas.width = backFinalWidthPx; backCanvas.height = backFinalHeightPx;
+    backCanvas.width = mainContentWidthPx;
+    backCanvas.height = mainContentHeightPx;
     const backCtx = backCanvas.getContext('2d');
     backCtx.fillStyle = 'white';
-    backCtx.fillRect(0, 0, backFinalWidthPx, backFinalHeightPx);
-    
-    const dividerX = (backFinalWidthPx / 2) + 170;
+    backCtx.fillRect(0, 0, mainContentWidthPx, mainContentHeightPx);
 
     backCtx.strokeStyle = '#e5e7eb';
     backCtx.lineWidth = 5;
     backCtx.beginPath();
+    const dividerX = (mainContentWidthPx / 2) + 170; // New position
     backCtx.moveTo(dividerX, 50);
-    backCtx.lineTo(dividerX, backFinalHeightPx - 50);
+    backCtx.lineTo(dividerX, mainContentHeightPx - 50);
     backCtx.stroke();
 
     backCtx.strokeStyle = '#cccccc';
     backCtx.lineWidth = 5;
     backCtx.setLineDash([15, 15]);
-    backCtx.strokeRect(backFinalWidthPx - 300, 50, 250, 250);
+    backCtx.strokeRect(mainContentWidthPx - 300, 50, 250, 250);
     backCtx.setLineDash([]);
-    
+
     const fontSize = dom.fontSizeSlider.value;
     const fontWeight = dom.fontWeightSlider.value;
-    const hiResFontSize = fontSize * (backFinalWidthPx / 504) * 1.2;
+    const hiResFontSize = fontSize * (mainContentWidthPx / 504) * 1.2;
     const fontFamily = dom.fontSelect.value;
     backCtx.fillStyle = dom.colorPicker.value;
     backCtx.font = `${fontWeight} ${hiResFontSize}px ${fontFamily}`;
@@ -650,9 +626,9 @@ async function generatePostcardImages({ includeAddressOnImage = true, forPrint =
 
     const messageText = dom.textInput.value;
     const lines = messageText.split('\n');
-    const messageX = 50 + 20; // Added 20px nudge
+    const messageX = 70; // 50 (original) + 20 (nudge)
     let messageY = hiResFontSize * 1.2;
-    const messageMaxWidth = dividerX - messageX - 20; // Use divider as the right boundary
+    const messageMaxWidth = dividerX - messageX - 20; // Max width up to the new line
     const lineHeight = hiResFontSize * 1.2;
 
     lines.forEach(line => {
@@ -660,7 +636,7 @@ async function generatePostcardImages({ includeAddressOnImage = true, forPrint =
         let currentLine = '';
         for (let i = 0; i < words.length; i++) {
             const testLine = currentLine + words[i] + ' ';
-            const metrics = backCtx.measureText(testLine); 
+            const metrics = backCtx.measureText(testLine);
             if (metrics.width > messageMaxWidth && i > 0) {
                 backCtx.fillText(currentLine, messageX, messageY);
                 messageY += lineHeight;
@@ -672,42 +648,69 @@ async function generatePostcardImages({ includeAddressOnImage = true, forPrint =
         backCtx.fillText(currentLine, messageX, messageY);
         messageY += lineHeight;
     });
-    
-    if (includeAddressOnImage) {
-        const hiResAddressFontSize = 12 * (backFinalWidthPx / 504) * 1.2;
-        backCtx.fillStyle = '#333';
-        backCtx.font = `400 ${hiResAddressFontSize}px Inter`;
-        backCtx.textAlign = 'left';
-        
-        const addressLines = [dom.addressInputs.name.value, dom.addressInputs.line1.value, dom.addressInputs.line2.value, dom.addressInputs.city.value, dom.addressInputs.postcode.value].filter(Boolean);
-        const addressBlockHeight = addressLines.length * hiResAddressFontSize * 1.4;
-        const addressX = dividerX + 45; 
-        let addressY = (backFinalHeightPx / 2) - (addressBlockHeight / 2);
 
-        addressLines.forEach(line => {
-            backCtx.fillText(line, addressX, addressY);
-            addressY += hiResAddressFontSize * 1.4;
-        });
+    const hiResAddressFontSize = 12 * (mainContentWidthPx / 504) * 1.2;
+    backCtx.fillStyle = '#333';
+    backCtx.font = `400 ${hiResAddressFontSize}px Inter`;
+    backCtx.textAlign = 'left';
+
+    const addressLines = [dom.addressInputs.name.value, dom.addressInputs.line1.value, dom.addressInputs.line2.value, dom.addressInputs.city.value, dom.addressInputs.postcode.value].filter(Boolean);
+    const addressBlockHeight = addressLines.length * hiResAddressFontSize * 1.4;
+    const addressX = dividerX + 20;
+    let addressY = (mainContentHeightPx / 2) - (addressBlockHeight / 2);
+
+    addressLines.forEach(line => {
+        backCtx.fillText(line, addressX, addressY);
+        addressY += hiResAddressFontSize * 1.4;
+    });
+
+    if (forEmail) {
+        const createLowResCanvas = (sourceCanvas, maxWidth = 800) => {
+            const scale = maxWidth / sourceCanvas.width;
+            const newWidth = sourceCanvas.width * scale;
+            const newHeight = sourceCanvas.height * scale;
+            const lowResCanvas = document.createElement('canvas');
+            lowResCanvas.width = newWidth;
+            lowResCanvas.height = newHeight;
+            const ctx = lowResCanvas.getContext('2d');
+
+            if (appState.isPortrait && sourceCanvas === frontCanvas) {
+                ctx.save();
+                ctx.translate(newWidth / 2, newHeight / 2);
+                ctx.rotate(-90 * Math.PI / 180);
+                ctx.drawImage(sourceCanvas, -newHeight / 2, -newWidth / 2, newHeight, newWidth);
+                ctx.restore();
+            } else {
+                ctx.drawImage(sourceCanvas, 0, 0, newWidth, newHeight);
+            }
+            return lowResCanvas;
+        };
+        return {
+            frontCanvas: createLowResCanvas(frontCanvas),
+            backCanvas: createLowResCanvas(backCanvas)
+        };
     }
-    
+
     return { frontCanvas, backCanvas };
 }
+
 async function updateFinalPreviews() {
-    const { frontCanvas, backCanvas } = await generatePostcardImages({includeAddressOnImage: true});
+    const { frontCanvas, backCanvas } = await generatePostcardImages({ forEmail: true });
     
     frontCanvas.toBlob(blob => {
         if (dom.finalPreviewFront.src) URL.revokeObjectURL(dom.finalPreviewFront.src);
         dom.finalPreviewFront.src = URL.createObjectURL(blob);
     });
-     backCanvas.toBlob(blob => {
+        backCanvas.toBlob(blob => {
         if (dom.finalPreviewBack.src) URL.revokeObjectURL(dom.finalPreviewBack.src);
         dom.finalPreviewBack.src = URL.createObjectURL(blob);
     });
 }
+
 async function handleImageSearch() {
     const query = dom.search.input.value;
     if (!query) return;
-    if (config.pixabayApiKey === 'YOUR_PIXABAY_API_KEY') {
+    if (appConfig.pixabayApiKey === 'YOUR_PIXABAY_API_KEY') {
         alert('Image search is not available in local preview. Please deploy to Vercel to use this feature.');
         return;
     }
@@ -716,7 +719,7 @@ async function handleImageSearch() {
     dom.search.resultsContainer.innerHTML = '';
     
     try {
-        const response = await fetch(`https://pixabay.com/api/?key=${config.pixabayApiKey}&q=${encodeURIComponent(query)}&image_type=photo&per_page=21`);
+        const response = await fetch(`https://pixabay.com/api/?key=${appConfig.pixabayApiKey}&q=${encodeURIComponent(query)}&image_type=photo&per_page=21`);
         if (!response.ok) {
             throw new Error(`Pixabay API responded with status: ${response.status}`);
         }
@@ -792,7 +795,7 @@ async function handleSendPostcard() {
     dom.sender.modal.style.display = 'flex';
     dom.sender.nameInput.value = localStorage.getItem('senderName') || '';
     dom.sender.emailInput.value = localStorage.getItem('senderEmail') || '';
-    grecaptcha.render(dom.sender.recaptchaContainer, { 'sitekey' : config.recaptchaSiteKey });
+    grecaptcha.render(dom.sender.recaptchaContainer, { 'sitekey' : appConfig.recaptchaSiteKey });
 }
 async function handleFinalSend() {
     const senderName = dom.sender.nameInput.value;
@@ -803,7 +806,7 @@ async function handleFinalSend() {
         alert('Please enter your name and email address.');
         return;
     }
-     if (!recaptchaToken) {
+        if (!recaptchaToken) {
         alert('Please complete the reCAPTCHA verification.');
         return;
     }
@@ -820,36 +823,20 @@ async function handleFinalSend() {
     dom.sender.errorMessage.classList.add('hidden');
 
     try {
-        const { frontCanvas: frontCanvasForPrint, backCanvas: backCanvasForPrint } = await generatePostcardImages({ includeAddressOnImage: false, forPrint: true });
+        const { frontCanvas: frontCanvasForPrint, backCanvas: backCanvasForPrint } = await generatePostcardImages({ forEmail: false });
+        const { frontCanvas: frontCanvasForEmail, backCanvas: backCanvasForEmail } = await generatePostcardImages({ forEmail: true });
 
-        const { frontCanvas: highResEmailFrontCanvas, backCanvas: highResBackCanvasForEmail } = await generatePostcardImages({ includeAddressOnImage: true, forPrint: false });
-
-        const createLowResCanvas = (sourceCanvas, maxWidth = 800) => {
-            const scale = maxWidth / sourceCanvas.width;
-            const newWidth = sourceCanvas.width * scale;
-            const newHeight = sourceCanvas.height * scale;
-            const lowResCanvas = document.createElement('canvas');
-            lowResCanvas.width = newWidth;
-            lowResCanvas.height = newHeight;
-            const ctx = lowResCanvas.getContext('2d');
-            ctx.drawImage(sourceCanvas, 0, 0, newWidth, newHeight);
-            return lowResCanvas;
-        };
-
-        const lowResFrontCanvasForEmail = createLowResCanvas(highResEmailFrontCanvas);
-        const lowResBackCanvasForEmail = createLowResCanvas(highResBackCanvasForEmail);
-
-        const frontBlob = await new Promise(resolve => frontCanvasForPrint.toBlob(resolve, 'image/jpeg', 0.9));
-        const frontBlobForEmail = await new Promise(resolve => lowResFrontCanvasForEmail.toBlob(resolve, 'image/jpeg', 0.8));
+        const frontBlobForPrint = await new Promise(resolve => frontCanvasForPrint.toBlob(resolve, 'image/jpeg', 0.9));
+        const frontBlobForEmail = await new Promise(resolve => frontCanvasForEmail.toBlob(resolve, 'image/jpeg', 0.8));
         const backBlobForPrint = await new Promise(resolve => backCanvasForPrint.toBlob(resolve, 'image/jpeg', 0.9));
-        const backBlobForEmail = await new Promise(resolve => lowResBackCanvasForEmail.toBlob(resolve, 'image/jpeg', 0.8));
+        const backBlobForEmail = await new Promise(resolve => backCanvasForEmail.toBlob(resolve, 'image/jpeg', 0.8));
         
         const sanitizedEmail = senderEmail.replace(/[^a-z0-9]/gi, '-');
         const sanitizedName = senderName.replace(/[^a-z0-9]/gi, '-');
         const sanitizedPostcode = dom.addressInputs.postcode.value.replace(/[^a-z0-9]/gi, '-');
         const timestamp = Date.now();
 
-        const frontFilename = `${sanitizedEmail}-${sanitizedName}-${sanitizedPostcode}-front-${timestamp}.jpg`;
+        const frontPrintFilename = `${sanitizedEmail}-${sanitizedName}-${sanitizedPostcode}-front-print-${timestamp}.jpg`;
         const frontEmailFilename = `${sanitizedEmail}-${sanitizedName}-${sanitizedPostcode}-front-email-${timestamp}.jpg`;
         const backPrintFilename = `${sanitizedEmail}-${sanitizedName}-${sanitizedPostcode}-back-print-${timestamp}.jpg`;
         const backEmailFilename = `${sanitizedEmail}-${sanitizedName}-${sanitizedPostcode}-back-email-${timestamp}.jpg`;
@@ -868,7 +855,7 @@ async function handleFinalSend() {
             uploadAndGetData(backEmailFilename, backBlobForEmail)
         ]);
 
-        const frontBlobData = await uploadAndGetData(frontFilename, frontBlob);
+        const frontPrintBlobData = await uploadAndGetData(frontPrintFilename, frontBlobForPrint);
         const backPrintBlobData = await uploadAndGetData(backPrintFilename, backBlobForPrint);
 
         const recipient = {};
@@ -893,15 +880,15 @@ async function handleFinalSend() {
         const postcardData = {
             sender: { name: senderName, email: senderEmail },
             recipient: recipient,
-            frontImageUrl: frontBlobData.url,
+            frontImageUrl: frontPrintBlobData.url,
             frontImageUrlForEmail: frontEmailBlobData.url,
             backImageUrl: backPrintBlobData.url, 
             backImageUrlWithAddress: backEmailBlobData.url,
             recaptchaToken: recaptchaToken,
-            emailSettings: { // Pass email settings to the server
-                senderName: siteConfig.emailSenderName,
-                subject: siteConfig.emailSubject,
-                body: siteConfig.emailBody
+            emailConfig: {
+                senderName: postcardConfig.email.senderName,
+                subject: postcardConfig.email.subject,
+                body: postcardConfig.email.body
             }
         };
         
@@ -912,16 +899,8 @@ async function handleFinalSend() {
         });
 
         if (!verificationResponse.ok) {
-            let serverError = 'Failed to send verification email.';
-            try {
-                const errorData = await verificationResponse.json();
-                if (errorData && errorData.error) {
-                    serverError = errorData.error;
-                }
-            } catch (e) {
-                 console.warn("Could not parse JSON error from server.");
-            }
-            throw new Error(serverError);
+            const errorResult = await verificationResponse.json();
+            throw new Error(errorResult.message || 'Failed to send verification email.');
         }
         
         dom.sender.detailsView.style.display = 'none';
@@ -929,8 +908,7 @@ async function handleFinalSend() {
 
     } catch (error) {
         console.error('An error occurred during the final send process:', error);
-        
-        dom.sender.errorMessage.textContent = error.message;
+        dom.sender.errorMessage.textContent = error.message || 'An unknown error occurred. Please try again.';
         dom.sender.errorMessage.classList.remove('hidden');
 
         btnText.style.display = 'inline';
@@ -958,12 +936,12 @@ async function fetchConfig() {
             throw new Error(`Server responded with ${response.status}`);
         }
         const serverConfig = await response.json();
-        config.recaptchaSiteKey = serverConfig.recaptchaSiteKey;
-        config.pixabayApiKey = serverConfig.pixabayApiKey;
+        appConfig.recaptchaSiteKey = serverConfig.recaptchaSiteKey;
+        appConfig.pixabayApiKey = serverConfig.pixabayApiKey;
     } catch (error) {
         console.warn(`Could not fetch server configuration: ${error.message}. This is expected in a local or preview environment. Ensure environment variables are set correctly on your Vercel deployment.`);
-        config.recaptchaSiteKey = '6LeIxAcpAAAAAApp-c-tM8_i21013-10203040';
-        config.pixabayApiKey = 'YOUR_PIXABAY_API_KEY';
+        appConfig.recaptchaSiteKey = '6LeIxAcpAAAAAApp-c-tM8_i21013-10203040';
+        appConfig.pixabayApiKey = 'YOUR_PIXABAY_API_KEY';
     }
 }
 
@@ -971,9 +949,9 @@ async function initialize() {
     applyConfiguration();
     await fetchConfig();
 
-    if (!config.recaptchaSiteKey) {
-         console.error("reCAPTCHA Site Key not loaded. Halting initialization.");
-         alert("Application is not configured correctly. Please contact the site owner.");
+    if (!appConfig.recaptchaSiteKey) {
+            console.error("reCAPTCHA Site Key not loaded. Halting initialization.");
+            alert("Application is not configured correctly. Please contact the site owner.");
         return; 
     }
     
@@ -1014,7 +992,7 @@ async function initialize() {
         const reader = new FileReader();
         reader.onload = async (e) => {
             let imageDataUrl = e.target.result;
-            if (file.size > config.maxFileSizeMB * 1024 * 1024) {
+            if (file.size > appConfig.maxFileSizeMB * 1024 * 1024) {
                 imageDataUrl = await resizeImage(imageDataUrl);
             }
             validateAndSetImage(imageDataUrl);
@@ -1028,7 +1006,7 @@ async function initialize() {
         drawPreviewCanvas();
         debouncedUpdateAllPreviews();
     });
-     dom.zoomOutBtn.addEventListener('click', () => {
+        dom.zoomOutBtn.addEventListener('click', () => {
         appState.imageZoom = Math.max(1.0, appState.imageZoom - 0.1);
         drawPreviewCanvas();
         debouncedUpdateAllPreviews();
@@ -1045,15 +1023,15 @@ async function initialize() {
                 
                 if(dom.frontText.input.value.trim() !== '') {
                     dom.ticks.two.classList.remove('hidden');
-                     dom.noThanksTextBtn.classList.add('opacity-0', 'pointer-events-none');
+                        dom.noThanksTextBtn.classList.add('opacity-0', 'pointer-events-none');
                 } else {
                     dom.ticks.two.classList.add('hidden');
-                     dom.noThanksTextBtn.classList.remove('opacity-0', 'pointer-events-none');
+                        dom.noThanksTextBtn.classList.remove('opacity-0', 'pointer-events-none');
                 }
                 
                 if (wasEmpty && appState.frontText.text && dom.previewCanvas.el.width > 0) {
-                   appState.frontText.x = dom.previewCanvas.el.width / 2;
-                   appState.frontText.y = dom.previewCanvas.el.height / 2;
+                    appState.frontText.x = dom.previewCanvas.el.width / 2;
+                    appState.frontText.y = dom.previewCanvas.el.height / 2;
                 }
                 
                 debouncedProfanityCheck(appState.frontText.text, dom.frontText.profanityWarning);
@@ -1108,13 +1086,13 @@ async function initialize() {
                     transformedMouseY >= box.y && transformedMouseY <= box.y + box.height
                 );
                 
-                if (distToResize <= config.handleRadius) {
+                if (distToResize <= appConfig.handleRadius) {
                     interactionMode = 'resizing';
                     isOverText = true;
-                } else if (distToRotate <= config.handleRadius) {
+                } else if (distToRotate <= appConfig.handleRadius) {
                     interactionMode = 'rotating';
                     isOverText = true;
-                } else if (distToWidth <= config.handleRadius) {
+                } else if (distToWidth <= appConfig.handleRadius) {
                     interactionMode = 'resizingWidth';
                     isOverText = true;
                 } else if (isOverBody) {
@@ -1256,4 +1234,3 @@ async function initialize() {
 }
 
 initialize();
-

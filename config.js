@@ -1,19 +1,22 @@
-const siteConfig = {
-    // UI Text
-    mainTitle: "Send holiday postcards home now.",
-    mainTitleColor: "#b9965b",
-    subtitle: "Upload pics, add a message and we'll post them for you tomorrow. A free service from ",
-    subtitleLinkText: "Six Star Cruises",
-    subtitleLinkUrl: "https://www.sixstarcruises.co.uk//",
-    subtitleLinkColor: "#b9965b",
-
-    // Button Colors
-    uploadButtonBgColor: "#b9965b",
-    findImageButtonBgColor: "#212529",
-    sendPostcardButtonBgColor: "#212529",
-
-    // Email Settings (for future server-side use)
-    emailSenderName: "Six Star Cruises",
-    emailSubject: "Your Postcard Confirmation",
-    emailBody: "Hello! Please click the link below to confirm and send your postcard."
+const postcardConfig = {
+    content: {
+        pageTitle: "SixStarCruises- Send Free Postcards",
+        faviconURL: "ssc_favicon.ico",
+        mainTitle: "Send holiday postcards home now.",
+        subtitleText: "Upload pics, add a message and we'll post them for you tomorrow. A free service from",
+        subtitleLinkText: "Six Star Cruises",
+        subtitleLinkURL: "https://www.sixstarcruises.co.uk/"
+    },
+    styles: {
+        titleColor: "#b9965b",
+        subtitleLinkColor: "#b9965b",
+        uploadButtonColor: "#b9965b",
+        findImageButtonColor: "#212529",
+        sendPostcardButtonColor: "#212529"
+    },
+    email: {
+        senderName: "Six Star Cruises",
+        subject: "Your postcard is on its way!",
+        body: "Thank you for using our free postcard service. Here is a copy of your design."
+    }
 };
