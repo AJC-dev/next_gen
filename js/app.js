@@ -90,19 +90,15 @@ function applyConfiguration() {
         return;
     }
     
-    // Set Page Title and Favicon
     document.title = postcardConfig.branding.pageTitle;
     document.getElementById('favicon').href = postcardConfig.branding.faviconURL;
 
-    // Apply Text Content
     dom.mainTitle.textContent = postcardConfig.content.mainTitle;
     dom.mainTitle.style.color = postcardConfig.styles.titleColor;
 
-    // Build and apply subtitle with link
     const subtitleLink = `<a href="${postcardConfig.content.subtitleLinkURL}" target="_blank" class="font-bold hover:underline" style="color: ${postcardConfig.styles.subtitleLinkColor};">${postcardConfig.content.subtitleLinkText}</a>`;
     dom.subtitle.innerHTML = `${postcardConfig.content.subtitleText} ${subtitleLink}.`;
 
-    // Apply Button Styles
     dom.uploadButton.style.backgroundColor = postcardConfig.styles.uploadButtonColor;
     dom.findImageButton.style.backgroundColor = postcardConfig.styles.findImageButtonColor;
     dom.sendPostcardBtn.style.backgroundColor = postcardConfig.styles.sendPostcardButtonColor;
@@ -174,7 +170,7 @@ function drawCoverImage(ctx, img, canvasWidth, canvasHeight, offsetX, offsetY, z
 function drawCleanFrontOnContext(ctx, width, height, scaleFactor, bleedPx = { x: 0, y: 0 }) {
     if (appState.uploadedImage) {
         ctx.save();
-        ctx.translate(bleedPx.x, bleedPx.y); // Account for bleed offset
+        ctx.translate(bleedPx.x, bleedPx.y);
         const scaledOffsetX = appState.imageOffsetX * scaleFactor;
         const scaledOffsetY = appState.imageOffsetY * scaleFactor;
         drawCoverImage(ctx, appState.uploadedImage, width, height, scaledOffsetX, scaledOffsetY, appState.imageZoom);
@@ -189,7 +185,6 @@ function drawCleanFrontOnContext(ctx, width, height, scaleFactor, bleedPx = { x:
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
-        // Adjust text position relative to the main content area (not the bleed)
         const textX = (x * scaleFactor) + bleedPx.x;
         const textY = (y * scaleFactor) + bleedPx.y;
 
@@ -209,7 +204,6 @@ function drawPreviewCanvas() {
         drawCoverImage(ctx, appState.uploadedImage, canvas.width, canvas.height, appState.imageOffsetX, appState.imageOffsetY, appState.imageZoom);
     }
 
-    // Draw Safety Zone
     ctx.save();
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
     ctx.lineWidth = 1;
@@ -290,7 +284,6 @@ function drawWrappedText(ctx, text, x, y, maxWidth, lineHeight, font) {
     }
 }
 
-
 function getTextMetrics(ctx) {
     const { text, font, size, x, y, width: textWidth } = appState.frontText;
     if (!text) return null;
@@ -338,7 +331,7 @@ function getHandlePositions(metrics) {
     return {
         size: {
             x: x + (resizeHandleRelX * cos - resizeHandleRelY * sin),
-            y: y + (resizeHandleRelX * sin + resizeHandleRelY * cos)
+            y: y + (resizeHandleRelY * sin + resizeHandleRelY * cos)
         },
         rotate: {
             x: x + (rotateHandleRelX * cos - rotateHandleRelY * sin),
@@ -483,7 +476,6 @@ function resetImagePreviews() {
     appState.isPortrait = false;
     resetImagePanAndZoom();
 
-    // Reset front text when image is deleted
     appState.frontText.text = '';
     appState.frontText.x = null;
     appState.frontText.y = null;
@@ -498,7 +490,6 @@ function resetImagePreviews() {
     dom.imageControls.classList.add('hidden');
     dom.ticks.one.classList.add('hidden');
 
-    // This was the fix: ensure the layout and canvas reset fully
     updatePostcardLayout();
 
     if (dom.finalPreviewFront.src) { URL.revokeObjectURL(dom.finalPreviewFront.src); dom.finalPreviewFront.src = ''; }
@@ -520,7 +511,7 @@ async function checkMessageOverflow() {
     const messageText = dom.textInput.value;
     const lines = messageText.split('\n');
     let totalHeight = 0;
-    const messageMaxWidth = (finalWidthPx / 2) + 70; // Adjusted for new line position
+    const messageMaxWidth = (finalWidthPx / 2) + 70;
 
     lines.forEach(line => {
         const words = line.split(' ');
@@ -552,14 +543,12 @@ async function generatePostcardImages({ forEmail = false } = {}) {
     const { a5WidthMM, a5HeightMM, printDPI, bleedMM } = postcardConfig.settings;
     const MM_TO_INCH = 25.4;
 
-    // --- Core Dimensions ---
     const mainContentWidthPx = Math.round((a5WidthMM / MM_TO_INCH) * printDPI);
     const mainContentHeightPx = Math.round((a5HeightMM / MM_TO_INCH) * printDPI);
     const bleedPx = Math.round((bleedMM / MM_TO_INCH) * printDPI);
 
     let frontCanvas;
 
-    // --- Path for Previews (always landscape) ---
     if (forEmail) {
         const previewCanvas = document.createElement('canvas');
         previewCanvas.width = mainContentWidthPx;
@@ -567,7 +556,6 @@ async function generatePostcardImages({ forEmail = false } = {}) {
         const previewCtx = previewCanvas.getContext('2d');
         
         if (appState.uploadedImage) {
-            // Create a temporary canvas with the correct orientation to draw on
             const tempCanvas = document.createElement('canvas');
             const tempCtx = tempCanvas.getContext('2d');
 
@@ -582,7 +570,6 @@ async function generatePostcardImages({ forEmail = false } = {}) {
             const scaleFactor = tempCanvas.width / dom.previewCanvas.el.width;
             drawCleanFrontOnContext(tempCtx, tempCanvas.width, tempCanvas.height, scaleFactor);
             
-            // Now draw the correctly rendered temp canvas onto the preview, rotating if necessary
             if (appState.isPortrait) {
                 previewCtx.save();
                 previewCtx.translate(previewCanvas.width / 2, previewCanvas.height / 2);
@@ -598,7 +585,6 @@ async function generatePostcardImages({ forEmail = false } = {}) {
         }
         frontCanvas = previewCanvas;
 
-    // --- Path for Print Files (respects orientation) ---
     } else {
         const printCanvas = document.createElement('canvas');
         printCanvas.width = (appState.isPortrait ? mainContentHeightPx : mainContentWidthPx) + (bleedPx * 2);
@@ -621,8 +607,6 @@ async function generatePostcardImages({ forEmail = false } = {}) {
         frontCanvas = printCanvas;
     }
     
-
-    // --- Generate Back Image (always the same) ---
     const backCanvas = document.createElement('canvas');
     backCanvas.width = mainContentWidthPx;
     backCanvas.height = mainContentHeightPx;
@@ -633,7 +617,7 @@ async function generatePostcardImages({ forEmail = false } = {}) {
     backCtx.strokeStyle = '#e5e7eb';
     backCtx.lineWidth = 5;
     backCtx.beginPath();
-    const dividerX = (mainContentWidthPx / 2) + 240; // New position
+    const dividerX = (mainContentWidthPx / 2) + 240;
     backCtx.moveTo(dividerX, 50);
     backCtx.lineTo(dividerX, mainContentHeightPx - 50);
     backCtx.stroke();
@@ -655,9 +639,9 @@ async function generatePostcardImages({ forEmail = false } = {}) {
 
     const messageText = dom.textInput.value;
     const lines = messageText.split('\n');
-    const messageX = 70; // 50 (original) + 20 (nudge)
+    const messageX = 70;
     let messageY = hiResFontSize * 1.2;
-    const messageMaxWidth = dividerX - messageX - 20; // Max width up to the new line
+    const messageMaxWidth = dividerX - messageX - 20;
     const lineHeight = hiResFontSize * 1.2;
 
     lines.forEach(line => {
@@ -693,7 +677,6 @@ async function generatePostcardImages({ forEmail = false } = {}) {
         addressY += hiResAddressFontSize * 1.4;
     });
 
-    // --- Final Resizing for Email ---
     if (forEmail) {
         const createLowResCanvas = (sourceCanvas, maxWidth = 800) => {
             const scale = maxWidth / sourceCanvas.width;
@@ -714,7 +697,6 @@ async function generatePostcardImages({ forEmail = false } = {}) {
 
     return { frontCanvas, backCanvas };
 }
-
 
 async function updateFinalPreviews() {
     const { frontCanvas, backCanvas } = await generatePostcardImages({ forEmail: true });
@@ -947,12 +929,28 @@ function debounce(func, delay) {
 const debouncedUpdateAllPreviews = debounce(updateFinalPreviews, 300);
 const debouncedProfanityCheck = debounce(checkForProfanityAPI, 500);
 
-function initialize() {
+async function fetchApiKeys() {
+    try {
+        const response = await fetch('/api/config');
+        if (!response.ok) {
+            throw new Error(`Server responded with ${response.status}`);
+        }
+        const serverConfig = await response.json();
+        postcardConfig.apiKeys.recaptchaSiteKey = serverConfig.recaptchaSiteKey;
+        postcardConfig.apiKeys.pixabayApiKey = serverConfig.pixabayApiKey;
+    } catch (error) {
+        console.error(`Could not fetch server configuration: ${error.message}. Ensure environment variables are set correctly on your Vercel deployment.`);
+        alert("Application is not configured correctly. Please contact the site owner.");
+    }
+}
+
+
+async function initialize() {
     applyConfiguration();
+    await fetchApiKeys();
 
     if (!postcardConfig.apiKeys.recaptchaSiteKey) {
         console.error("reCAPTCHA Site Key not loaded. Halting initialization.");
-        alert("Application is not configured correctly. Please contact the site owner.");
         return;
     }
 
@@ -1012,7 +1010,6 @@ function initialize() {
         drawPreviewCanvas();
         debouncedUpdateAllPreviews();
     });
-
 
     Object.values(dom.frontText).forEach(el => {
         if (el.tagName === 'INPUT' || el.tagName === 'SELECT') {
@@ -1235,3 +1232,4 @@ function initialize() {
 }
 
 initialize();
+
