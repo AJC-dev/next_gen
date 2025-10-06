@@ -1,9 +1,5 @@
 import { put } from '@vercel/blob';
 
-export const config = {
-  runtime: 'edge',
-};
-
 export default async function upload(request) {
   const { searchParams } = new URL(request.url);
   const filename = searchParams.get('filename');
@@ -30,3 +26,4 @@ export default async function upload(request) {
     });
   }
 }
+
