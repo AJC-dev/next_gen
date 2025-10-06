@@ -566,27 +566,33 @@ document.addEventListener('DOMContentLoaded', () => {
             const previewCtx = frontCanvas.getContext('2d');
             previewCtx.fillStyle = '#FFFFFF';
             previewCtx.fillRect(0, 0, previewWidth, previewHeight);
-
+    
             if (appState.uploadedImage) {
                 if (appState.isPortrait) {
-                    // Step 1: Create a temporary, correctly-oriented portrait canvas
+                    // Step 1: Create a temporary, high-res canvas with the correct A5 portrait aspect ratio
                     const tempCanvas = document.createElement('canvas');
-                    const tempWidth = Math.round(previewHeight * (a5HeightMM / a5WidthMM)); // Swapped dimensions for portrait
-                    const tempHeight = previewHeight;
+                    const tempWidth = Math.round(mainContentHeightPx * (a5HeightMM / a5WidthMM)); // A5 portrait width
+                    const tempHeight = mainContentHeightPx; // A5 portrait height
                     tempCanvas.width = tempWidth;
                     tempCanvas.height = tempHeight;
                     const tempCtx = tempCanvas.getContext('2d');
                     
                     const scaleFactor = tempWidth / dom.previewCanvas.el.width;
                     drawCleanFrontOnContext(tempCtx, tempWidth, tempHeight, scaleFactor);
-
-                    // Step 2: Draw the rotated temporary canvas onto the final landscape preview canvas
+    
+                    // Step 2: Calculate the correct 'fit' dimensions to draw the rotated image
                     previewCtx.save();
                     previewCtx.translate(previewWidth / 2, previewHeight / 2);
                     previewCtx.rotate(90 * Math.PI / 180);
-                    previewCtx.drawImage(tempCanvas, -tempHeight / 2, -tempWidth / 2, tempHeight, tempWidth);
+                    
+                    // Fit the rotated portrait (now landscape) into the landscape preview
+                    const ratio = tempCanvas.width / tempCanvas.height;
+                    let newWidth = previewHeight;
+                    let newHeight = newWidth / ratio;
+                    
+                    previewCtx.drawImage(tempCanvas, -newWidth / 2, -newHeight / 2, newWidth, newHeight);
                     previewCtx.restore();
-
+    
                 } else { // Landscape
                     const scaleFactor = previewWidth / dom.previewCanvas.el.width;
                     drawCleanFrontOnContext(previewCtx, previewWidth, previewHeight, scaleFactor);
