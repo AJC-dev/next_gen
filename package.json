@@ -5,8 +5,7 @@
   "main": "index.html",
   "type": "module",
   "scripts": {
-    "start": "serve",
-    "build": "echo 'Build script added to trigger dependency installation on Vercel'"
+    "start": "serve"
   },
   "dependencies": {
     "@vercel/blob": "^0.23.2",
