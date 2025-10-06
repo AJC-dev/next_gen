@@ -21,6 +21,11 @@
       "src": "ssc_favicon.ico",
       "use": "@vercel/static"
     }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    }
   ]
 }
-
