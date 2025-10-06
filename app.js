@@ -400,224 +400,84 @@ function toggleAccordion(header, forceOpen = null) {
     }
 }
 
-async function resizeImage(base64Str) {
-    return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.src = base64Str;
-        img.onload = () => {
-            const maxDimension = 2400;
-            let { width, height } = img;
-
-            if (width > maxDimension || height > maxDimension) {
-                if (width > height) {
-                    height = Math.round((height * maxDimension) / width);
-                    width = maxDimension;
-                } else {
-                    width = Math.round((width * maxDimension) / height);
-                    height = maxDimension;
-                }
-            }
-
-            const canvas = document.createElement('canvas');
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, width, height);
-            resolve(canvas.toDataURL('image/jpeg', 0.8));
-        };
-        img.onerror = (error) => {
-            console.error("Error loading image for resizing:", error);
-            reject(error);
-        };
-    });
-}
-
-function updatePostcardLayout() {
-    const canvas = dom.previewCanvas.el;
-    const container = dom.previewContainer;
-    
-    container.classList.remove('aspect-[210/148]', 'aspect-[148/210]');
-
-    if (appState.isPortrait) {
-        container.classList.add('aspect-[148/210]');
-    } else {
-        container.classList.add('aspect-[210/148]');
-    }
-
-    requestAnimationFrame(() => {
-        canvas.width = container.clientWidth;
-        canvas.height = container.clientHeight;
-        drawPreviewCanvas();
-        debouncedUpdateAllPreviews();
-    });
-}
-
-function resetImagePanAndZoom() {
-    appState.imageOffsetX = 0;
-    appState.imageOffsetY = 0;
-    appState.imageZoom = 1.0;
-}
-
-async function validateAndSetImage(src) {
-        const tempImage = new Image();
-        await new Promise((resolve, reject) => { 
-        tempImage.crossOrigin = "Anonymous";
-        tempImage.onload = resolve; 
-        tempImage.onerror = reject; 
-        tempImage.src = src; 
-    });
-
-    if (tempImage.width < appConfig.minImageDimension || tempImage.height < appConfig.minImageDimension) {
-        dom.imageWarning.textContent = `For best quality, please upload an image that is at least ${appConfig.minImageDimension}px on its shortest side.`;
-        dom.imageWarning.classList.remove('hidden');
-        dom.imageUploader.value = '';
-        resetImagePreviews();
-    } else {
-        dom.imageWarning.classList.add('hidden');
-        appState.uploadedImage = tempImage;
-        appState.imageSrcForResend = src;
-        
-        appState.isPortrait = tempImage.height > tempImage.width;
-        resetImagePanAndZoom();
-
-        dom.imagePlaceholder.classList.add('hidden');
-        dom.previewContainer.classList.remove('hidden');
-        dom.imageControls.classList.remove('hidden');
-        dom.ticks.one.classList.remove('hidden');
-        
-        updatePostcardLayout();
-    }
-}
-
-function resetImagePreviews() {
-    appState.uploadedImage = null;
-    appState.imageSrcForResend = null;
-    appState.isPortrait = false;
-    resetImagePanAndZoom();
-    
-    // Reset front text when image is deleted
-    appState.frontText.text = '';
-    appState.frontText.x = null;
-    appState.frontText.y = null;
-    dom.frontText.input.value = '';
-    dom.frontText.profanityWarning.classList.add('hidden');
-    dom.ticks.two.classList.add('hidden');
-    dom.noThanksTextBtn.classList.remove('opacity-0', 'pointer-events-none');
-    
-    const container = dom.previewContainer;
-    container.classList.add('hidden');
-    container.classList.remove('aspect-[148/210]');
-    container.classList.add('aspect-[210/148]');
-    
-    dom.imagePlaceholder.classList.remove('hidden');
-    dom.imageControls.classList.add('hidden');
-    dom.ticks.one.classList.add('hidden');
-    
-    dom.finalPreviewFrontContainer.classList.remove('aspect-[148/210]');
-    dom.finalPreviewFrontContainer.classList.add('aspect-[210/148]');
-
-    if (dom.finalPreviewFront.src) { URL.revokeObjectURL(dom.finalPreviewFront.src); dom.finalPreviewFront.src = ''; }
-    debouncedUpdateAllPreviews();
-}
-
-async function checkMessageOverflow() {
-    await document.fonts.ready;
-    const tempCanvas = document.createElement('canvas');
-    const tempCtx = tempCanvas.getContext('2d');
-    const finalWidthPx = Math.round((appConfig.a5WidthMM / 25.4) * appConfig.printDPI);
-    const fontSize = dom.fontSizeSlider.value;
-    const fontWeight = dom.fontWeightSlider.value;
-    const hiResFontSize = fontSize * (finalWidthPx / 504) * 1.2;
-    const fontFamily = dom.fontSelect.value;
-    const lineHeight = hiResFontSize * 1.2;
-    tempCtx.font = `${fontWeight} ${hiResFontSize}px ${fontFamily}`;
-    
-    const messageText = dom.textInput.value;
-    const lines = messageText.split('\n');
-    let totalHeight = 0;
-    const messageMaxWidth = (finalWidthPx / 2) + 70; // Adjusted for new line position
-
-    lines.forEach(line => {
-        const words = line.split(' ');
-        let currentLine = '';
-        for (let i = 0; i < words.length; i++) {
-            const testLine = currentLine + words[i] + ' ';
-            const metrics = tempCtx.measureText(testLine);
-            if (metrics.width > messageMaxWidth && i > 0) {
-                totalHeight += lineHeight;
-                currentLine = words[i] + ' ';
-            } else {
-                currentLine = testLine;
-            }
-        }
-        totalHeight += lineHeight;
-    });
-
-    const maxTextHeight = Math.round((appConfig.a5HeightMM / 25.4) * appConfig.printDPI) - (hiResFontSize * 1.2) - 50;
-    if (totalHeight > maxTextHeight) {
-        dom.messageWarning.classList.remove('hidden');
-    } else {
-        dom.messageWarning.classList.add('hidden');
-    }
-}
-
 async function generatePostcardImages({ forEmail = false } = {}) {
     await document.fonts.ready;
 
     const MM_TO_INCH = 25.4;
-    const bleedPxTotal = Math.round((appConfig.bleedMM * 2 / MM_TO_INCH) * appConfig.printDPI);
+    const longEdgePx = Math.round((appConfig.a5WidthMM / MM_TO_INCH) * appConfig.printDPI);
+    const shortEdgePx = Math.round((appConfig.a5HeightMM / MM_TO_INCH) * appConfig.printDPI);
 
-    const mainContentWidthPx = Math.round((appConfig.a5WidthMM / MM_TO_INCH) * appConfig.printDPI);
-    const mainContentHeightPx = Math.round((appConfig.a5HeightMM / MM_TO_INCH) * appConfig.printDPI);
-
-    const frontCanvasWidth = appState.isPortrait ? mainContentHeightPx + bleedPxTotal : mainContentWidthPx + bleedPxTotal;
-    const frontCanvasHeight = appState.isPortrait ? mainContentWidthPx + bleedPxTotal : mainContentHeightPx + bleedPxTotal;
-
+    // --- FRONT CANVAS ---
     const frontCanvas = document.createElement('canvas');
-    frontCanvas.width = frontCanvasWidth;
-    frontCanvas.height = frontCanvasHeight;
-    const frontCtx = frontCanvas.getContext('2d');
+    if (forEmail) {
+        // --- PREVIEW/EMAIL LOGIC (ALWAYS LANDSCAPE) ---
+        frontCanvas.width = longEdgePx;
+        frontCanvas.height = shortEdgePx;
+        const frontCtx = frontCanvas.getContext('2d');
+        const scaleFactor = longEdgePx / (appState.isPortrait ? dom.previewCanvas.el.height : dom.previewCanvas.el.width);
 
-    if (appState.uploadedImage) {
-        const bleedOffset = bleedPxTotal / 2;
-        const scaleFactor = (appState.isPortrait ? mainContentHeightPx : mainContentWidthPx) / dom.previewCanvas.el.width;
+        if (appState.uploadedImage) {
+            if (appState.isPortrait) {
+                // Rotate the context to draw the portrait content onto the landscape canvas
+                frontCtx.save();
+                frontCtx.translate(longEdgePx / 2, shortEdgePx / 2);
+                frontCtx.rotate(90 * Math.PI / 180);
+                frontCtx.translate(-shortEdgePx / 2, -longEdgePx / 2);
+                drawCleanFrontOnContext(frontCtx, shortEdgePx, longEdgePx, scaleFactor);
+                frontCtx.restore();
+            } else {
+                drawCleanFrontOnContext(frontCtx, longEdgePx, shortEdgePx, scaleFactor);
+            }
+        } else {
+             frontCtx.fillStyle = '#FFFFFF';
+             frontCtx.fillRect(0, 0, frontCanvas.width, frontCanvas.height);
+        }
 
-        drawCleanFrontOnContext(
-            frontCtx,
-            appState.isPortrait ? mainContentHeightPx : mainContentWidthPx,
-            appState.isPortrait ? mainContentWidthPx : mainContentHeightPx,
-            scaleFactor,
-            { x: bleedOffset, y: bleedOffset }
-        );
     } else {
-        frontCtx.fillStyle = '#FFFFFF';
-        frontCtx.fillRect(0, 0, frontCanvasWidth, frontCanvasHeight);
+        // --- PRINT LOGIC (RESPECTS ORIENTATION, ADDS BLEED) ---
+        const bleedPx = Math.round((appConfig.bleedMM / MM_TO_INCH) * appConfig.printDPI);
+
+        const contentWidth = appState.isPortrait ? shortEdgePx : longEdgePx;
+        const contentHeight = appState.isPortrait ? longEdgePx : shortEdgePx;
+
+        frontCanvas.width = contentWidth + (bleedPx * 2);
+        frontCanvas.height = contentHeight + (bleedPx * 2);
+        const frontCtx = frontCanvas.getContext('2d');
+        
+        if (appState.uploadedImage) {
+            const scaleFactor = contentWidth / (appState.isPortrait ? dom.previewCanvas.el.height : dom.previewCanvas.el.width);
+            drawCleanFrontOnContext(frontCtx, contentWidth, contentHeight, scaleFactor, { x: bleedPx, y: bleedPx });
+        } else {
+             frontCtx.fillStyle = '#FFFFFF';
+             frontCtx.fillRect(0, 0, frontCanvas.width, frontCanvas.height);
+        }
     }
 
+    // --- BACK CANVAS ---
     const backCanvas = document.createElement('canvas');
-    backCanvas.width = mainContentWidthPx;
-    backCanvas.height = mainContentHeightPx;
+    backCanvas.width = longEdgePx;
+    backCanvas.height = shortEdgePx;
     const backCtx = backCanvas.getContext('2d');
     backCtx.fillStyle = 'white';
-    backCtx.fillRect(0, 0, mainContentWidthPx, mainContentHeightPx);
+    backCtx.fillRect(0, 0, longEdgePx, shortEdgePx);
 
     backCtx.strokeStyle = '#e5e7eb';
     backCtx.lineWidth = 5;
     backCtx.beginPath();
-    const dividerX = (mainContentWidthPx / 2) + 170; // New position
+    const dividerX = (longEdgePx / 2) + 170; // New position
     backCtx.moveTo(dividerX, 50);
-    backCtx.lineTo(dividerX, mainContentHeightPx - 50);
+    backCtx.lineTo(dividerX, shortEdgePx - 50);
     backCtx.stroke();
 
     backCtx.strokeStyle = '#cccccc';
     backCtx.lineWidth = 5;
     backCtx.setLineDash([15, 15]);
-    backCtx.strokeRect(mainContentWidthPx - 300, 50, 250, 250);
+    backCtx.strokeRect(longEdgePx - 300, 50, 250, 250);
     backCtx.setLineDash([]);
 
     const fontSize = dom.fontSizeSlider.value;
     const fontWeight = dom.fontWeightSlider.value;
-    const hiResFontSize = fontSize * (mainContentWidthPx / 504) * 1.2;
+    const hiResFontSize = fontSize * (longEdgePx / 504) * 1.2;
     const fontFamily = dom.fontSelect.value;
     backCtx.fillStyle = dom.colorPicker.value;
     backCtx.font = `${fontWeight} ${hiResFontSize}px ${fontFamily}`;
@@ -649,7 +509,7 @@ async function generatePostcardImages({ forEmail = false } = {}) {
         messageY += lineHeight;
     });
 
-    const hiResAddressFontSize = 12 * (mainContentWidthPx / 504) * 1.2;
+    const hiResAddressFontSize = 12 * (longEdgePx / 504) * 1.2;
     backCtx.fillStyle = '#333';
     backCtx.font = `400 ${hiResAddressFontSize}px Inter`;
     backCtx.textAlign = 'left';
@@ -657,14 +517,17 @@ async function generatePostcardImages({ forEmail = false } = {}) {
     const addressLines = [dom.addressInputs.name.value, dom.addressInputs.line1.value, dom.addressInputs.line2.value, dom.addressInputs.city.value, dom.addressInputs.postcode.value].filter(Boolean);
     const addressBlockHeight = addressLines.length * hiResAddressFontSize * 1.4;
     const addressX = dividerX + 20;
-    let addressY = (mainContentHeightPx / 2) - (addressBlockHeight / 2);
+    let addressY = (shortEdgePx / 2) - (addressBlockHeight / 2);
 
     addressLines.forEach(line => {
         backCtx.fillText(line, addressX, addressY);
         addressY += hiResAddressFontSize * 1.4;
     });
 
+
+    // --- Final processing ---
     if (forEmail) {
+        // We already created the correct hi-res preview canvases. Just need to scale them down.
         const createLowResCanvas = (sourceCanvas, maxWidth = 800) => {
             const scale = maxWidth / sourceCanvas.width;
             const newWidth = sourceCanvas.width * scale;
@@ -673,16 +536,7 @@ async function generatePostcardImages({ forEmail = false } = {}) {
             lowResCanvas.width = newWidth;
             lowResCanvas.height = newHeight;
             const ctx = lowResCanvas.getContext('2d');
-
-            if (appState.isPortrait && sourceCanvas === frontCanvas) {
-                ctx.save();
-                ctx.translate(newWidth / 2, newHeight / 2);
-                ctx.rotate(-90 * Math.PI / 180);
-                ctx.drawImage(sourceCanvas, -newHeight / 2, -newWidth / 2, newHeight, newWidth);
-                ctx.restore();
-            } else {
-                ctx.drawImage(sourceCanvas, 0, 0, newWidth, newHeight);
-            }
+            ctx.drawImage(sourceCanvas, 0, 0, newWidth, newHeight);
             return lowResCanvas;
         };
         return {
@@ -691,6 +545,7 @@ async function generatePostcardImages({ forEmail = false } = {}) {
         };
     }
 
+    // Return high-res print canvases
     return { frontCanvas, backCanvas };
 }
 
