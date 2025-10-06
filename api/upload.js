@@ -1,22 +1,32 @@
 import { put } from '@vercel/blob';
 
-export default async function handler(request, response) {
-  const { filename } = request.query;
+export const config = {
+  runtime: 'edge',
+};
 
-  if (!filename) {
-    return response.status(400).json({ message: 'Missing filename.' });
+export default async function upload(request) {
+  const { searchParams } = new URL(request.url);
+  const filename = searchParams.get('filename');
+
+  if (!filename || !request.body) {
+    return new Response(JSON.stringify({ message: 'No filename or file body provided.' }), {
+      status: 400,
+    });
   }
 
   try {
-    // Pass the entire request object to put()
-    // Vercel's library will handle extracting the body stream.
-    const blob = await put(filename, request, {
+    const blob = await put(filename, request.body, {
       access: 'public',
     });
 
-    return response.status(200).json(blob);
+    return new Response(JSON.stringify(blob), {
+      status: 200,
+    });
+    
   } catch (error) {
     console.error('Error uploading to Vercel Blob:', error);
-    return response.status(500).json({ message: 'Error uploading file.' });
+    return new Response(JSON.stringify({ message: 'Error uploading file.', error: error.message }), {
+      status: 500,
+    });
   }
 }
