@@ -571,7 +571,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (appState.isPortrait) {
                     // Step 1: Create a temporary, correctly-oriented portrait canvas
                     const tempCanvas = document.createElement('canvas');
-                    const tempWidth = Math.round(previewHeight * (a5HeightMM / a5WidthMM));
+                    const tempWidth = Math.round(previewHeight * (a5HeightMM / a5WidthMM)); // Swapped dimensions for portrait
                     const tempHeight = previewHeight;
                     tempCanvas.width = tempWidth;
                     tempCanvas.height = tempHeight;
