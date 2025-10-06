@@ -1,13 +1,11 @@
 export const postcardConfig = {
-    branding: {
-        pageTitle: "SixStarCruises - Send Free Postcards",
-        faviconURL: "ssc_favicon.ico"
-    },
     content: {
+        pageTitle: "SixStarCruises - Send Free Postcards",
+        faviconURL: "ssc_favicon.ico",
         mainTitle: "Send holiday postcards home now.",
         subtitleText: "Upload pics, add a message and we'll post them for you tomorrow. A free service from",
-        subtitleLinkURL: "https://www.sixstarcruises.co.uk/",
-        subtitleLinkText: "Six Star Cruises"
+        subtitleLinkText: "Six Star Cruises",
+        subtitleLinkURL: "https://www.sixstarcruises.co.uk/"
     },
     styles: {
         titleColor: "#b9965b",
@@ -18,23 +16,18 @@ export const postcardConfig = {
     },
     email: {
         senderName: "Six Star Cruises",
-        subject: "Your Postcard is on its way!",
-        body: "Thank you for using our postcard service. Please click the link below to confirm and send your postcard."
+        subject: "Your Postcard Proof",
+        body: "Here is the final proof of your postcard. Please click the link to confirm and send."
     },
-    apiKeys: {
-        // IMPORTANT: These keys should be treated as secrets. 
-        // In a real-world scenario, they would be fetched from a secure backend 
-        // and not stored directly in a public JavaScript file.
-        recaptchaSiteKey: "YOUR_RECAPTCHA_SITE_KEY",
-        pixabayApiKey: "YOUR_PIXABAY_API_KEY"
-    },
-    settings: {
-        minImageDimension: 800,
-        printDPI: 300,
+    print: {
+        dpi: 300,
         a5WidthMM: 210,
         a5HeightMM: 148,
         bleedMM: 3,
-        handleRadius: 8,
+        handleRadius: 8
+    },
+    validation: {
+        minImageDimension: 800,
         maxFileSizeMB: 4
     }
 };
