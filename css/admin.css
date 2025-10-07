@@ -1,0 +1,31 @@
+body {
+    font-family: 'Inter', sans-serif;
+}
+
+.card {
+    @apply bg-white p-6 rounded-lg shadow-md;
+}
+
+.card-title {
+    @apply text-xl font-bold text-gray-700 border-b pb-3 mb-6;
+}
+
+.form-group {
+    @apply flex flex-col;
+}
+
+.form-group label, .color-group label {
+    @apply mb-2 text-sm font-medium text-gray-600;
+}
+
+.form-group input, .form-group textarea {
+    @apply w-full p-2 border border-gray-300 rounded-md bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500;
+}
+
+.color-group {
+    @apply flex flex-col items-center;
+}
+
+.color-group input[type="color"] {
+    @apply w-full h-12 p-1 border border-gray-300 rounded-md cursor-pointer;
+}
