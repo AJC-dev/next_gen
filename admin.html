@@ -3,152 +3,150 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Postcard App Configuration</title>
+    <title>Postcard Creator - Configuration</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/admin.css">
 </head>
-<body class="bg-slate-100">
+<body class="bg-gray-100 p-8">
 
-    <div class="container mx-auto p-4 md:p-8">
-        <header class="mb-8">
-            <h1 class="text-3xl font-bold text-gray-800">Postcard App Configuration</h1>
-            <p class="text-gray-600 mt-1">Manage the content and appearance of your postcard application.</p>
-        </header>
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6">Postcard Creator Configuration</h1>
 
-        <form id="config-form" class="space-y-8">
+        <div class="bg-white p-8 rounded-lg shadow-lg">
 
             <!-- Main Page Settings -->
-            <div class="card">
-                <h2 class="card-title">Main Page</h2>
+            <div class="settings-section">
+                <h2 class="text-xl font-semibold text-gray-700 border-b pb-2 mb-4">Main Page Settings</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="form-group">
-                        <label for="pageTitle">Page Title</label>
-                        <input type="text" id="pageTitle" name="pageTitle">
+                    <div>
+                        <label for="pageTitle" class="form-label">Page Title</label>
+                        <input type="text" id="pageTitle" class="form-input">
                     </div>
-                    <div class="form-group">
-                        <label for="faviconURL">Favicon URL</label>
-                        <input type="text" id="faviconURL" name="faviconURL">
+                    <div>
+                        <label for="faviconURL" class="form-label">Favicon URL</label>
+                        <input type="text" id="faviconURL" class="form-input">
                     </div>
-                    <div class="form-group md:col-span-2">
-                        <label for="mainTitle">Main Heading</label>
-                        <input type="text" id="mainTitle" name="mainTitle">
+                    <div>
+                        <label for="mainTitle" class="form-label">Main Title Text</label>
+                        <input type="text" id="mainTitle" class="form-input">
                     </div>
-                    <div class="form-group md:col-span-2">
-                        <label for="subtitleText">Subtitle Text</label>
-                        <input type="text" id="subtitleText" name="subtitleText">
+                    <div>
+                        <label for="titleColor" class="form-label">Main Title Colour</label>
+                        <input type="color" id="titleColor" class="form-color-input">
                     </div>
-                    <div class="form-group">
-                        <label for="subtitleLinkText">Subtitle Link Text</label>
-                        <input type="text" id="subtitleLinkText" name="subtitleLinkText">
+                    <div class="md:col-span-2">
+                        <label for="subtitleText" class="form-label">Subtitle Text</label>
+                        <input type="text" id="subtitleText" class="form-input">
                     </div>
-                    <div class="form-group">
-                        <label for="subtitleLinkURL">Subtitle Link URL</label>
-                        <input type="url" id="subtitleLinkURL" name="subtitleLinkURL">
+                    <div>
+                        <label for="subtitleLinkText" class="form-label">Subtitle Link Text</label>
+                        <input type="text" id="subtitleLinkText" class="form-input">
+                    </div>
+                    <div>
+                        <label for="subtitleLinkURL" class="form-label">Subtitle Link URL</label>
+                        <input type="text" id="subtitleLinkURL" class="form-input">
+                    </div>
+                     <div>
+                        <label for="subtitleLinkColor" class="form-label">Subtitle Link Colour</label>
+                        <input type="color" id="subtitleLinkColor" class="form-color-input">
                     </div>
                 </div>
             </div>
 
-            <!-- Styling Settings -->
-            <div class="card">
-                <h2 class="card-title">Branding & Colors</h2>
-                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-                    <div class="color-group">
-                        <label for="titleColor">Title Color</label>
-                        <input type="color" id="titleColor" name="titleColor">
+            <!-- Button Settings -->
+            <div class="settings-section">
+                <h2 class="text-xl font-semibold text-gray-700 border-b pb-2 mb-4">Button Colours</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label for="uploadButtonColor" class="form-label">Upload Button</label>
+                        <input type="color" id="uploadButtonColor" class="form-color-input">
                     </div>
-                    <div class="color-group">
-                        <label for="subtitleLinkColor">Link Color</label>
-                        <input type="color" id="subtitleLinkColor" name="subtitleLinkColor">
+                    <div>
+                        <label for="findImageButtonColor" class="form-label">Find Image Button</label>
+                        <input type="color" id="findImageButtonColor" class="form-color-input">
                     </div>
-                    <div class="color-group">
-                        <label for="uploadButtonColor">Upload Button</label>
-                        <input type="color" id="uploadButtonColor" name="uploadButtonColor">
-                    </div>
-                    <div class="color-group">
-                        <label for="findImageButtonColor">Find Image Button</label>
-                        <input type="color" id="findImageButtonColor" name="findImageButtonColor">
-                    </div>
-                     <div class="color-group">
-                        <label for="sendPostcardButtonColor">Send Button</label>
-                        <input type="color" id="sendPostcardButtonColor" name="sendPostcardButtonColor">
+                    <div>
+                        <label for="sendPostcardButtonColor" class="form-label">Send Postcard Button</label>
+                        <input type="color" id="sendPostcardButtonColor" class="form-color-input">
                     </div>
                 </div>
             </div>
 
-            <!-- Email Settings -->
-            <div class="card">
-                <h2 class="card-title">Verification Email</h2>
+            <!-- Confirmation Email Settings -->
+            <div class="settings-section">
+                <h2 class="text-xl font-semibold text-gray-700 border-b pb-2 mb-4">Confirmation Email Settings</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="form-group">
-                        <label for="senderName">Sender Name</label>
-                        <input type="text" id="senderName" name="senderName">
+                    <div>
+                        <label for="emailSenderName" class="form-label">Sender Name</label>
+                        <input type="text" id="emailSenderName" class="form-input">
                     </div>
-                    <div class="form-group">
-                        <label for="subject">Email Subject</label>
-                        <input type="text" id="subject" name="subject">
+                    <div>
+                        <label for="emailSubject" class="form-label">Email Subject</label>
+                        <input type="text" id="emailSubject" class="form-input">
                     </div>
-                    <div class="form-group md:col-span-2">
-                        <label for="body">Email Body</label>
-                        <textarea id="body" name="body" rows="3"></textarea>
+                    <div class="md:col-span-2">
+                        <label for="emailBody" class="form-label">Email Body</label>
+                        <textarea id="emailBody" class="form-input" rows="4"></textarea>
                     </div>
                 </div>
             </div>
 
             <!-- Success Page Settings -->
-            <div class="card">
-                <h2 class="card-title">Success Page</h2>
-                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="form-group">
-                        <label for="successTitle">Page Title</label>
-                        <input type="text" id="successTitle" name="successTitle">
+            <div class="settings-section">
+                <h2 class="text-xl font-semibold text-gray-700 border-b pb-2 mb-4">Success Page Settings</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="successTitle" class="form-label">Page Title</label>
+                        <input type="text" id="successTitle" class="form-input">
                     </div>
-                    <div class="form-group">
-                        <label for="successHeading">Heading</label>
-                        <input type="text" id="successHeading" name="successHeading">
+                     <div>
+                        <label for="successFaviconURL" class="form-label">Favicon URL</label>
+                        <input type="text" id="successFaviconURL" class="form-input">
                     </div>
-                     <div class="form-group">
-                        <label for="successSubheading">Subheading</label>
-                        <input type="text" id="successSubheading" name="successSubheading">
+                    <div>
+                        <label for="successHeading" class="form-label">Heading Text</label>
+                        <input type="text" id="successHeading" class="form-input">
                     </div>
-                    <div class="form-group">
-                        <label for="successButtonText">Button Text</label>
-                        <input type="text" id="successButtonText" name="successButtonText">
+                    <div>
+                        <label for="successHeadingColor" class="form-label">Heading Colour</label>
+                        <input type="color" id="successHeadingColor" class="form-color-input">
                     </div>
-                    <div class="form-group md:col-span-2">
-                        <label for="successPromoText">Promo Text</label>
-                        <textarea id="successPromoText" name="successPromoText" rows="2"></textarea>
+                     <div class="md:col-span-2">
+                        <label for="successSubheading" class="form-label">Subheading Text</label>
+                        <input type="text" id="successSubheading" class="form-input">
                     </div>
-                    <div class="form-group">
-                        <label for="successPromoImageURL">Promo Image URL</label>
-                        <input type="text" id="successPromoImageURL" name="successPromoImageURL">
+                    <div>
+                        <label for="successButtonText" class="form-label">Button Text</label>
+                        <input type="text" id="successButtonText" class="form-input">
                     </div>
-                    <div class="form-group">
-                        <label for="successPromoLinkURL">Promo Link URL</label>
-                        <input type="url" id="successPromoLinkURL" name="successPromoLinkURL">
+                    <div>
+                        <label for="successButtonColor" class="form-label">Button Colour</label>
+                        <input type="color" id="successButtonColor" class="form-color-input">
                     </div>
-                    <div class="color-group">
-                        <label for="successHeadingColor">Heading Color</label>
-                        <input type="color" id="successHeadingColor" name="successHeadingColor">
+                    <div class="md:col-span-2">
+                        <label for="successPromoText" class="form-label">Promo Text</label>
+                        <input type="text" id="successPromoText" class="form-input">
                     </div>
-                    <div class="color-group">
-                        <label for="successButtonColor">Button Color</label>
-                        <input type="color" id="successButtonColor" name="successButtonColor">
+                     <div>
+                        <label for="successPromoLinkURL" class="form-label">Promo Link URL</label>
+                        <input type="text" id="successPromoLinkURL" class="form-input">
+                    </div>
+                     <div>
+                        <label for="successPromoImageURL" class="form-label">Promo Image URL</label>
+                        <input type="text" id="successPromoImageURL" class="form-input">
                     </div>
                 </div>
             </div>
 
-            <div class="flex justify-end pt-4">
-                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-colors">
+            <div class="mt-8 text-right">
+                <button id="save-changes-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition duration-300">
                     Save Changes
                 </button>
             </div>
-
-        </form>
+        </div>
     </div>
 
-    <script type="module" src="js/admin.js" defer></script>
+    <script type="module" src="js/admin.js"></script>
+
 </body>
 </html>
