@@ -7,141 +7,175 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="css/admin.css">
 </head>
-<body class="bg-gray-100 p-8">
+<body class="bg-gray-100 p-4 sm:p-8">
 
     <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl font-bold text-gray-800 mb-6">Postcard Creator Configuration</h1>
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">Postcard Creator Configuration</h1>
+            <button type="submit" form="config-form" id="save-changes-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition duration-300 shadow-md">
+                Save Changes
+            </button>
+        </div>
 
-        <form id="config-form" class="bg-white p-8 rounded-lg shadow-lg">
+        <form id="config-form" class="bg-white p-6 sm:p-8 rounded-lg shadow-lg space-y-4">
 
-            <!-- Main Page Settings -->
-            <div class="settings-section">
-                <h2 class="text-xl font-semibold text-gray-700 border-b pb-2 mb-4">Main Page Settings</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label for="pageTitle" class="form-label">Page Title</label>
-                        <input type="text" id="pageTitle" class="form-input">
+            <!-- Accordion Section 1: Main Page -->
+            <div class="border border-gray-200 rounded-lg overflow-hidden">
+                <div class="accordion-header flex justify-between items-center p-3 cursor-pointer bg-gray-50 hover:bg-gray-100">
+                    <h2 class="text-lg font-semibold text-gray-700">Main Page Settings</h2>
+                    <svg class="accordion-icon w-5 h-5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </div>
+                <div class="accordion-content p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="pageTitle" class="form-label">Page Title</label>
+                            <input type="text" id="pageTitle" class="form-input">
+                        </div>
+                        <div class="image-upload-field">
+                            <label for="faviconURL" class="form-label">Favicon URL</label>
+                            <div class="flex items-center gap-2">
+                                <img id="favicon-preview" src="" class="w-8 h-8 rounded border p-1 bg-gray-50 object-contain">
+                                <input type="text" id="faviconURL" class="form-input flex-grow">
+                                <label for="favicon-uploader" class="upload-btn">Upload</label>
+                                <input type="file" id="favicon-uploader" class="hidden" accept="image/x-icon, image/png, image/svg+xml">
+                            </div>
+                        </div>
+                        <div>
+                            <label for="mainTitle" class="form-label">Main Title Text</label>
+                            <input type="text" id="mainTitle" class="form-input">
+                        </div>
+                        <div>
+                            <label for="titleColor" class="form-label">Main Title Colour</label>
+                            <input type="color" id="titleColor" class="form-color-input">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label for="subtitleText" class="form-label">Subtitle Text</label>
+                            <input type="text" id="subtitleText" class="form-input">
+                        </div>
+                        <div>
+                            <label for="subtitleLinkText" class="form-label">Subtitle Link Text</label>
+                            <input type="text" id="subtitleLinkText" class="form-input">
+                        </div>
+                        <div>
+                            <label for="subtitleLinkURL" class="form-label">Subtitle Link URL</label>
+                            <input type="text" id="subtitleLinkURL" class="form-input">
+                        </div>
+                         <div>
+                            <label for="subtitleLinkColor" class="form-label">Subtitle Link Colour</label>
+                            <input type="color" id="subtitleLinkColor" class="form-color-input">
+                        </div>
                     </div>
-                    <div>
-                        <label for="faviconURL" class="form-label">Favicon URL</label>
-                        <input type="text" id="faviconURL" class="form-input">
-                    </div>
-                    <div>
-                        <label for="mainTitle" class="form-label">Main Title Text</label>
-                        <input type="text" id="mainTitle" class="form-input">
-                    </div>
-                    <div>
-                        <label for="titleColor" class="form-label">Main Title Colour</label>
-                        <input type="color" id="titleColor" class="form-color-input">
-                    </div>
-                    <div class="md:col-span-2">
-                        <label for="subtitleText" class="form-label">Subtitle Text</label>
-                        <input type="text" id="subtitleText" class="form-input">
-                    </div>
-                    <div>
-                        <label for="subtitleLinkText" class="form-label">Subtitle Link Text</label>
-                        <input type="text" id="subtitleLinkText" class="form-input">
-                    </div>
-                    <div>
-                        <label for="subtitleLinkURL" class="form-label">Subtitle Link URL</label>
-                        <input type="text" id="subtitleLinkURL" class="form-input">
-                    </div>
-                     <div>
-                        <label for="subtitleLinkColor" class="form-label">Subtitle Link Colour</label>
-                        <input type="color" id="subtitleLinkColor" class="form-color-input">
+                </div>
+            </div>
+            
+            <!-- Accordion Section 2: Buttons -->
+            <div class="border border-gray-200 rounded-lg overflow-hidden">
+                <div class="accordion-header flex justify-between items-center p-3 cursor-pointer bg-gray-50 hover:bg-gray-100">
+                    <h2 class="text-lg font-semibold text-gray-700">Button Colours</h2>
+                    <svg class="accordion-icon w-5 h-5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </div>
+                <div class="accordion-content p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                            <label for="uploadButtonColor" class="form-label">Upload Button</label>
+                            <input type="color" id="uploadButtonColor" class="form-color-input">
+                        </div>
+                        <div>
+                            <label for="findImageButtonColor" class="form-label">Find Image Button</label>
+                            <input type="color" id="findImageButtonColor" class="form-color-input">
+                        </div>
+                        <div>
+                            <label for="sendPostcardButtonColor" class="form-label">Send Postcard Button</label>
+                            <input type="color" id="sendPostcardButtonColor" class="form-color-input">
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Button Settings -->
-            <div class="settings-section">
-                <h2 class="text-xl font-semibold text-gray-700 border-b pb-2 mb-4">Button Colours</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div>
-                        <label for="uploadButtonColor" class="form-label">Upload Button</label>
-                        <input type="color" id="uploadButtonColor" class="form-color-input">
-                    </div>
-                    <div>
-                        <label for="findImageButtonColor" class="form-label">Find Image Button</label>
-                        <input type="color" id="findImageButtonColor" class="form-color-input">
-                    </div>
-                    <div>
-                        <label for="sendPostcardButtonColor" class="form-label">Send Postcard Button</label>
-                        <input type="color" id="sendPostcardButtonColor" class="form-color-input">
+            <!-- Accordion Section 3: Email -->
+            <div class="border border-gray-200 rounded-lg overflow-hidden">
+                <div class="accordion-header flex justify-between items-center p-3 cursor-pointer bg-gray-50 hover:bg-gray-100">
+                    <h2 class="text-lg font-semibold text-gray-700">Confirmation Email Settings</h2>
+                    <svg class="accordion-icon w-5 h-5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </div>
+                <div class="accordion-content p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="emailSenderName" class="form-label">Sender Name</label>
+                            <input type="text" id="emailSenderName" class="form-input">
+                        </div>
+                        <div>
+                            <label for="emailSubject" class="form-label">Email Subject</label>
+                            <input type="text" id="emailSubject" class="form-input">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label for="emailBody" class="form-label">Email Body</label>
+                            <textarea id="emailBody" class="form-input" rows="4"></textarea>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Confirmation Email Settings -->
-            <div class="settings-section">
-                <h2 class="text-xl font-semibold text-gray-700 border-b pb-2 mb-4">Confirmation Email Settings</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label for="emailSenderName" class="form-label">Sender Name</label>
-                        <input type="text" id="emailSenderName" class="form-input">
-                    </div>
-                    <div>
-                        <label for="emailSubject" class="form-label">Email Subject</label>
-                        <input type="text" id="emailSubject" class="form-input">
-                    </div>
-                    <div class="md:col-span-2">
-                        <label for="emailBody" class="form-label">Email Body</label>
-                        <textarea id="emailBody" class="form-input" rows="4"></textarea>
+            <!-- Accordion Section 4: Success Page -->
+            <div class="border border-gray-200 rounded-lg overflow-hidden">
+                <div class="accordion-header flex justify-between items-center p-3 cursor-pointer bg-gray-50 hover:bg-gray-100">
+                    <h2 class="text-lg font-semibold text-gray-700">Success Page Settings</h2>
+                    <svg class="accordion-icon w-5 h-5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </div>
+                <div class="accordion-content p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="successTitle" class="form-label">Page Title</label>
+                            <input type="text" id="successTitle" class="form-input">
+                        </div>
+                        <div class="image-upload-field">
+                            <label for="successFaviconURL" class="form-label">Favicon URL</label>
+                             <div class="flex items-center gap-2">
+                                <img id="success-favicon-preview" src="" class="w-8 h-8 rounded border p-1 bg-gray-50 object-contain">
+                                <input type="text" id="successFaviconURL" class="form-input flex-grow">
+                                <label for="success-favicon-uploader" class="upload-btn">Upload</label>
+                                <input type="file" id="success-favicon-uploader" class="hidden" accept="image/x-icon, image/png, image/svg+xml">
+                            </div>
+                        </div>
+                        <div>
+                            <label for="successHeading" class="form-label">Heading Text</label>
+                            <input type="text" id="successHeading" class="form-input">
+                        </div>
+                        <div>
+                            <label for="successHeadingColor" class="form-label">Heading Colour</label>
+                            <input type="color" id="successHeadingColor" class="form-color-input">
+                        </div>
+                         <div class="md:col-span-2">
+                            <label for="successSubheading" class="form-label">Subheading Text</label>
+                            <input type="text" id="successSubheading" class="form-input">
+                        </div>
+                        <div>
+                            <label for="successButtonText" class="form-label">Button Text</label>
+                            <input type="text" id="successButtonText" class="form-input">
+                        </div>
+                        <div>
+                            <label for="successButtonColor" class="form-label">Button Colour</label>
+                            <input type="color" id="successButtonColor" class="form-color-input">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label for="successPromoText" class="form-label">Promo Text</label>
+                            <input type="text" id="successPromoText" class="form-input">
+                        </div>
+                         <div>
+                            <label for="successPromoLinkURL" class="form-label">Promo Link URL</label>
+                            <input type="text" id="successPromoLinkURL" class="form-input">
+                        </div>
+                        <div class="image-upload-field">
+                            <label for="successPromoImageURL" class="form-label">Promo Image URL</label>
+                            <div class="flex items-center gap-2">
+                                <img id="promo-image-preview" src="" class="w-16 h-16 rounded border p-1 bg-gray-50 object-contain">
+                                <input type="text" id="successPromoImageURL" class="form-input flex-grow">
+                                <label for="promo-image-uploader" class="upload-btn">Upload</label>
+                                <input type="file" id="promo-image-uploader" class="hidden" accept="image/*">
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-
-            <!-- Success Page Settings -->
-            <div class="settings-section">
-                <h2 class="text-xl font-semibold text-gray-700 border-b pb-2 mb-4">Success Page Settings</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label for="successTitle" class="form-label">Page Title</label>
-                        <input type="text" id="successTitle" class="form-input">
-                    </div>
-                     <div>
-                        <label for="successFaviconURL" class="form-label">Favicon URL</label>
-                        <input type="text" id="successFaviconURL" class="form-input">
-                    </div>
-                    <div>
-                        <label for="successHeading" class="form-label">Heading Text</label>
-                        <input type="text" id="successHeading" class="form-input">
-                    </div>
-                    <div>
-                        <label for="successHeadingColor" class="form-label">Heading Colour</label>
-                        <input type="color" id="successHeadingColor" class="form-color-input">
-                    </div>
-                     <div class="md:col-span-2">
-                        <label for="successSubheading" class="form-label">Subheading Text</label>
-                        <input type="text" id="successSubheading" class="form-input">
-                    </div>
-                    <div>
-                        <label for="successButtonText" class="form-label">Button Text</label>
-                        <input type="text" id="successButtonText" class="form-input">
-                    </div>
-                    <div>
-                        <label for="successButtonColor" class="form-label">Button Colour</label>
-                        <input type="color" id="successButtonColor" class="form-color-input">
-                    </div>
-                    <div class="md:col-span-2">
-                        <label for="successPromoText" class="form-label">Promo Text</label>
-                        <input type="text" id="successPromoText" class="form-input">
-                    </div>
-                     <div>
-                        <label for="successPromoLinkURL" class="form-label">Promo Link URL</label>
-                        <input type="text" id="successPromoLinkURL" class="form-input">
-                    </div>
-                     <div>
-                        <label for="successPromoImageURL" class="form-label">Promo Image URL</label>
-                        <input type="text" id="successPromoImageURL" class="form-input">
-                    </div>
-                </div>
-            </div>
-
-            <div class="mt-8 text-right">
-                <button type="submit" id="save-changes-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition duration-300">
-                    Save Changes
-                </button>
             </div>
         </form>
     </div>
