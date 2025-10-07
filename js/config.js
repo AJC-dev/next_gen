@@ -29,6 +29,17 @@ export const postcardConfig = {
     validation: {
         minImageDimension: 800,
         maxFileSizeMB: 4
+    },
+    successPage: {
+        title: "Postcard Sent!",
+        heading: "Success!",
+        headingColor: "#0E0B3D",
+        subheading: "Hope you're having a great holiday.",
+        buttonText: "Send again, to someone else?",
+        buttonColor: "#212529",
+        promoText: "Savings Event: Book next year with savings of up to 40% and Free Business Class Flights",
+        promoImageURL: "sixstars.png",
+        promoLinkURL: "https://www.sixstarcruises.co.uk/"
     }
 };
 
