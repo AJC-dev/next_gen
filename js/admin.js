@@ -86,9 +86,81 @@ function loadConfiguration() {
 }
 
 
-function handleFormSubmit(event) {
+async function handleFormSubmit(event) {
     event.preventDefault();
-    alert('Saving functionality will be implemented in the next step!');
+    const saveButton = document.getElementById('save-changes-btn');
+    saveButton.textContent = 'Saving...';
+    saveButton.disabled = true;
+
+    // Reconstruct the config object from the form fields
+    const newConfigData = {
+        content: {
+            pageTitle: document.getElementById('pageTitle').value,
+            faviconURL: document.getElementById('faviconURL').value,
+            mainTitle: document.getElementById('mainTitle').value,
+            subtitleText: document.getElementById('subtitleText').value,
+            subtitleLinkText: document.getElementById('subtitleLinkText').value,
+            subtitleLinkURL: document.getElementById('subtitleLinkURL').value,
+        },
+        styles: {
+            titleColor: document.getElementById('titleColor').value,
+            subtitleLinkColor: document.getElementById('subtitleLinkColor').value,
+            uploadButtonColor: document.getElementById('uploadButtonColor').value,
+            findImageButtonColor: document.getElementById('findImageButtonColor').value,
+            sendPostcardButtonColor: document.getElementById('sendPostcardButtonColor').value,
+        },
+        email: {
+            senderName: document.getElementById('emailSenderName').value,
+            subject: document.getElementById('emailSubject').value,
+            body: document.getElementById('emailBody').value,
+        },
+        successPage: {
+            pageTitle: document.getElementById('successTitle').value,
+            faviconURL: document.getElementById('successFaviconURL').value,
+            heading: document.getElementById('successHeading').value,
+            headingColor: document.getElementById('successHeadingColor').value,
+            subheading: document.getElementById('successSubheading').value,
+            buttonText: document.getElementById('successButtonText').value,
+            buttonColor: document.getElementById('successButtonColor').value,
+            promoText: document.getElementById('successPromoText').value,
+            promoLinkURL: document.getElementById('successPromoLinkURL').value,
+            promoImageURL: document.getElementById('successPromoImageURL').value,
+        },
+        // Keep non-editable print and validation settings from the original config
+        print: postcardConfig.print,
+        validation: postcardConfig.validation,
+    };
+
+    try {
+        const response = await fetch('/api/update-config', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(newConfigData),
+        });
+
+        if (!response.ok) {
+            throw new Error('Server responded with an error.');
+        }
+
+        saveButton.textContent = 'Saved!';
+        saveButton.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+        saveButton.classList.add('bg-green-500');
+
+    } catch (error) {
+        console.error('Failed to save configuration:', error);
+        saveButton.textContent = 'Error!';
+        saveButton.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+        saveButton.classList.add('bg-red-500');
+    } finally {
+        setTimeout(() => {
+            saveButton.textContent = 'Save Changes';
+            saveButton.disabled = false;
+            saveButton.classList.remove('bg-green-500', 'bg-red-500');
+            saveButton.classList.add('bg-blue-600', 'hover:bg-blue-700');
+        }, 2000);
+    }
 }
 
 function setupImageUploader(uploaderId, targetInputId, previewId) {
@@ -104,7 +176,7 @@ function setupImageUploader(uploaderId, targetInputId, previewId) {
         reader.onload = (e) => {
             const base64String = e.target.result;
             preview.src = base64String;
-            targetInput.value = base64String; // Store as Base64 string
+            targetInput.value = base64String;
         };
         reader.readAsDataURL(file);
     });
@@ -112,11 +184,9 @@ function setupImageUploader(uploaderId, targetInputId, previewId) {
 
 function updatePreviewFromInput(url, previewId) {
     const preview = document.getElementById(previewId);
-    // Basic check to see if it's a URL or Base64
     if (url && (url.startsWith('http') || url.startsWith('data:image'))) {
         preview.src = url;
     } else if (!url) {
-        preview.src = ""; // Clear preview if input is empty
+        preview.src = "";
     }
 }
-
