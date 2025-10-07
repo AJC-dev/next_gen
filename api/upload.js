@@ -23,8 +23,8 @@ export default async function upload(request, response) {
       return response.status(400).json({ error: "Missing 'filename' query parameter." });
     }
 
-    // Convert the streamed request body into a Buffer.
-    const fileBuffer = await streamToBuffer(request.body);
+    // FIX: The request object itself is the stream, not request.body.
+    const fileBuffer = await streamToBuffer(request);
 
     // Upload the file to Vercel Blob storage.
     const blob = await put(filename, fileBuffer, {
@@ -36,7 +36,9 @@ export default async function upload(request, response) {
 
   } catch (error) {
     console.error('Upload failed:', error);
-    return response.status(500).json({ error: 'Failed to upload file.', details: error.message });
+    // Provide a more detailed error response to the client
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return response.status(500).json({ error: 'Failed to upload file.', details: errorMessage });
   }
 }
 
