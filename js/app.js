@@ -1,6 +1,17 @@
-import { postcardConfig } from './config.js';
+let postcardConfig; // Will be populated from DB or fallback
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const response = await fetch('/api/get-config');
+        if (!response.ok) {
+             throw new Error('Could not fetch from DB');
+        }
+        postcardConfig = await response.json();
+    } catch (error) {
+        console.warn("Using local fallback configuration.", error);
+        const { postcardConfig: localConfig } = await import('./config.js');
+        postcardConfig = localConfig;
+    }
 
     // --- APPLICATION STATE ---
     const appState = { 
@@ -566,33 +577,42 @@ document.addEventListener('DOMContentLoaded', () => {
             const previewCtx = frontCanvas.getContext('2d');
             previewCtx.fillStyle = '#FFFFFF';
             previewCtx.fillRect(0, 0, previewWidth, previewHeight);
-    
+
             if (appState.uploadedImage) {
                 if (appState.isPortrait) {
-                    // Step 1: Create a temporary, high-res canvas with the correct A5 portrait aspect ratio
                     const tempCanvas = document.createElement('canvas');
-                    const tempWidth = Math.round(mainContentHeightPx * (a5HeightMM / a5WidthMM)); // A5 portrait width
-                    const tempHeight = mainContentHeightPx; // A5 portrait height
+                    const tempWidth = Math.round(previewHeight * (a5HeightMM / a5WidthMM));
+                    const tempHeight = previewHeight;
                     tempCanvas.width = tempWidth;
                     tempCanvas.height = tempHeight;
                     const tempCtx = tempCanvas.getContext('2d');
                     
                     const scaleFactor = tempWidth / dom.previewCanvas.el.width;
                     drawCleanFrontOnContext(tempCtx, tempWidth, tempHeight, scaleFactor);
-    
-                    // Step 2: Calculate the correct 'fit' dimensions to draw the rotated image
+
                     previewCtx.save();
                     previewCtx.translate(previewWidth / 2, previewHeight / 2);
                     previewCtx.rotate(90 * Math.PI / 180);
                     
-                    // Fit the rotated portrait (now landscape) into the landscape preview
-                    const ratio = tempCanvas.width / tempCanvas.height;
-                    let newWidth = previewHeight;
-                    let newHeight = newWidth / ratio;
-                    
-                    previewCtx.drawImage(tempCanvas, -newWidth / 2, -newHeight / 2, newWidth, newHeight);
+                    const targetWidth = previewHeight;
+                    const targetHeight = previewWidth;
+                    const targetAspect = targetWidth / targetHeight;
+                    const sourceAspect = tempCanvas.width / tempCanvas.height;
+                    let drawWidth, drawHeight, dx, dy;
+
+                    if (sourceAspect > targetAspect) {
+                        drawWidth = targetWidth;
+                        drawHeight = drawWidth / sourceAspect;
+                    } else {
+                        drawHeight = targetHeight;
+                        drawWidth = drawHeight * sourceAspect;
+                    }
+                    dx = -drawWidth / 2;
+                    dy = -drawHeight / 2;
+
+                    previewCtx.drawImage(tempCanvas, dx, dy, drawWidth, drawHeight);
                     previewCtx.restore();
-    
+
                 } else { // Landscape
                     const scaleFactor = previewWidth / dom.previewCanvas.el.width;
                     drawCleanFrontOnContext(previewCtx, previewWidth, previewHeight, scaleFactor);
@@ -847,8 +867,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const uploadAndGetData = async (filename, blob) => {
                 const response = await fetch(`/api/upload?filename=${filename}`, { method: 'POST', body: blob });
                 if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(`Failed to upload ${filename}. Server responded with ${response.status}: ${errorText}`);
+                    const errorData = await response.json();
+                    throw new Error(`Failed to upload ${filename}. Server responded with ${response.status}: ${errorData.details || errorData.error}`);
                 }
                 return response.json();
             };
@@ -1236,4 +1256,3 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initialize();
 });
-
