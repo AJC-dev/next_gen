@@ -5,13 +5,24 @@ const kv = createClient({
   url: process.env.REDIS_URL,
 });
 
+// Helper function to parse the request body stream into a JSON object
+async function parseJSONBody(request) {
+    const chunks = [];
+    for await (const chunk of request) {
+        chunks.push(chunk);
+    }
+    const body = Buffer.concat(chunks).toString();
+    return JSON.parse(body);
+}
+
 export default async function handler(request, response) {
     if (request.method !== 'POST') {
         return response.status(405).json({ message: 'Method Not Allowed' });
     }
 
     try {
-        const newConfig = request.body;
+        // FIX: Correctly parse the incoming JSON from the request body stream
+        const newConfig = await parseJSONBody(request);
         
         // Save the new configuration object to the Vercel KV store
         await kv.set('postcard-config', newConfig);
