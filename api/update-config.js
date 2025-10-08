@@ -6,13 +6,29 @@ const kv = createClient({
 });
 
 // Helper function to parse the request body stream into a JSON object
-async function parseJSONBody(request) {
-    const chunks = [];
-    for await (const chunk of request) {
-        chunks.push(chunk);
-    }
-    const body = Buffer.concat(chunks).toString();
-    return JSON.parse(body);
+// This version uses the classic Node.js event-based approach for maximum compatibility.
+function parseJSONBody(request) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    request.on('data', chunk => {
+      body += chunk.toString();
+    });
+    request.on('end', () => {
+      try {
+        // Handle cases where the body might be empty
+        if (body === '') {
+          resolve({});
+          return;
+        }
+        resolve(JSON.parse(body));
+      } catch (e) {
+        reject(e);
+      }
+    });
+    request.on('error', (err) => {
+        reject(err);
+    });
+  });
 }
 
 export default async function handler(request, response) {
@@ -21,7 +37,7 @@ export default async function handler(request, response) {
     }
 
     try {
-        // FIX: Correctly parse the incoming JSON from the request body stream
+        // Use the new, more robust JSON parsing function
         const newConfig = await parseJSONBody(request);
         
         // Save the new configuration object to the Vercel KV store
