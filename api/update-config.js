@@ -1,4 +1,9 @@
-import { kv } from '@vercel/kv';
+import { createClient } from '@vercel/kv';
+
+// Initialize the KV client using the REDIS_URL from environment variables
+const kv = createClient({
+  url: process.env.REDIS_URL,
+});
 
 // Helper function to parse the request body stream into a JSON object
 function parseJSONBody(request) {
