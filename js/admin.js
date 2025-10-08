@@ -1,11 +1,34 @@
-import { postcardConfig } from './config.js';
-
 // --- INITIALIZATION ---
-loadConfiguration();
-setupEventListeners();
+// No longer imports from static file, will fetch from DB
+loadInitialConfiguration();
+
+
+// --- GLOBALS ---
+let currentConfig = {};
 
 
 // --- FUNCTIONS ---
+
+async function loadInitialConfiguration() {
+    try {
+        const response = await fetch('/api/get-config');
+        if (!response.ok) {
+            // If DB is empty, import from local file as a fallback
+            const { postcardConfig } = await import('./config.js');
+            currentConfig = postcardConfig;
+        } else {
+            currentConfig = await response.json();
+        }
+    } catch (error) {
+        console.error("Could not fetch from DB, falling back to local config.", error);
+        const { postcardConfig } = await import('./config.js');
+        currentConfig = postcardConfig;
+    } finally {
+        populateForm(currentConfig);
+        setupEventListeners();
+    }
+}
+
 
 function setupEventListeners() {
     document.getElementById('config-form').addEventListener('submit', handleFormSubmit);
@@ -15,14 +38,10 @@ function setupEventListeners() {
     accordionHeaders.forEach(header => {
         header.addEventListener('click', () => {
             const currentlyOpen = header.classList.contains('open');
-
-            // First, close all accordion sections
             accordionHeaders.forEach(h => {
                 h.classList.remove('open');
                 h.nextElementSibling.classList.remove('open');
             });
-
-            // If the clicked one wasn't already open, then open it.
             if (!currentlyOpen) {
                 header.classList.add('open');
                 header.nextElementSibling.classList.add('open');
@@ -30,59 +49,56 @@ function setupEventListeners() {
         });
     });
     
-    // Auto-open the first accordion section by default
     const firstHeader = document.querySelector('.accordion-header');
     if (firstHeader) {
         firstHeader.classList.add('open');
         firstHeader.nextElementSibling.classList.add('open');
     }
 
-    // Image upload handlers
     setupImageUploader('favicon-uploader', 'faviconURL', 'favicon-preview');
     setupImageUploader('success-favicon-uploader', 'successFaviconURL', 'success-favicon-preview');
     setupImageUploader('promo-image-uploader', 'successPromoImageURL', 'promo-image-preview');
 
-    // Image preview updater when URL is pasted
     document.getElementById('faviconURL').addEventListener('input', (e) => updatePreviewFromInput(e.target.value, 'favicon-preview'));
     document.getElementById('successFaviconURL').addEventListener('input', (e) => updatePreviewFromInput(e.target.value, 'success-favicon-preview'));
     document.getElementById('successPromoImageURL').addEventListener('input', (e) => updatePreviewFromInput(e.target.value, 'promo-image-preview'));
 }
 
-function loadConfiguration() {
+function populateForm(config) {
     // Main Page Settings
-    document.getElementById('pageTitle').value = postcardConfig.content.pageTitle;
-    updatePreviewFromInput(postcardConfig.content.faviconURL, 'favicon-preview');
-    document.getElementById('faviconURL').value = postcardConfig.content.faviconURL;
-    document.getElementById('mainTitle').value = postcardConfig.content.mainTitle;
-    document.getElementById('titleColor').value = postcardConfig.styles.titleColor;
-    document.getElementById('subtitleText').value = postcardConfig.content.subtitleText;
-    document.getElementById('subtitleLinkText').value = postcardConfig.content.subtitleLinkText;
-    document.getElementById('subtitleLinkURL').value = postcardConfig.content.subtitleLinkURL;
-    document.getElementById('subtitleLinkColor').value = postcardConfig.styles.subtitleLinkColor;
+    document.getElementById('pageTitle').value = config.content.pageTitle;
+    updatePreviewFromInput(config.content.faviconURL, 'favicon-preview');
+    document.getElementById('faviconURL').value = config.content.faviconURL;
+    document.getElementById('mainTitle').value = config.content.mainTitle;
+    document.getElementById('titleColor').value = config.styles.titleColor;
+    document.getElementById('subtitleText').value = config.content.subtitleText;
+    document.getElementById('subtitleLinkText').value = config.content.subtitleLinkText;
+    document.getElementById('subtitleLinkURL').value = config.content.subtitleLinkURL;
+    document.getElementById('subtitleLinkColor').value = config.styles.subtitleLinkColor;
     
     // Button Colours
-    document.getElementById('uploadButtonColor').value = postcardConfig.styles.uploadButtonColor;
-    document.getElementById('findImageButtonColor').value = postcardConfig.styles.findImageButtonColor;
-    document.getElementById('sendPostcardButtonColor').value = postcardConfig.styles.sendPostcardButtonColor;
+    document.getElementById('uploadButtonColor').value = config.styles.uploadButtonColor;
+    document.getElementById('findImageButtonColor').value = config.styles.findImageButtonColor;
+    document.getElementById('sendPostcardButtonColor').value = config.styles.sendPostcardButtonColor;
 
     // Confirmation Email Settings
-    document.getElementById('emailSenderName').value = postcardConfig.email.senderName;
-    document.getElementById('emailSubject').value = postcardConfig.email.subject;
-    document.getElementById('emailBody').value = postcardConfig.email.body;
+    document.getElementById('emailSenderName').value = config.email.senderName;
+    document.getElementById('emailSubject').value = config.email.subject;
+    document.getElementById('emailBody').value = config.email.body;
 
     // Success Page Settings
-    document.getElementById('successTitle').value = postcardConfig.successPage.pageTitle;
-    updatePreviewFromInput(postcardConfig.successPage.faviconURL, 'success-favicon-preview');
-    document.getElementById('successFaviconURL').value = postcardConfig.successPage.faviconURL;
-    document.getElementById('successHeading').value = postcardConfig.successPage.heading;
-    document.getElementById('successHeadingColor').value = postcardConfig.successPage.headingColor;
-    document.getElementById('successSubheading').value = postcardConfig.successPage.subheading;
-    document.getElementById('successButtonText').value = postcardConfig.successPage.buttonText;
-    document.getElementById('successButtonColor').value = postcardConfig.successPage.buttonColor;
-    document.getElementById('successPromoText').value = postcardConfig.successPage.promoText;
-    document.getElementById('successPromoLinkURL').value = postcardConfig.successPage.promoLinkURL;
-    updatePreviewFromInput(postcardConfig.successPage.promoImageURL, 'promo-image-preview');
-    document.getElementById('successPromoImageURL').value = postcardConfig.successPage.promoImageURL;
+    document.getElementById('successTitle').value = config.successPage.pageTitle;
+    updatePreviewFromInput(config.successPage.faviconURL, 'success-favicon-preview');
+    document.getElementById('successFaviconURL').value = config.successPage.faviconURL;
+    document.getElementById('successHeading').value = config.successPage.heading;
+    document.getElementById('successHeadingColor').value = config.successPage.headingColor;
+    document.getElementById('successSubheading').value = config.successPage.subheading;
+    document.getElementById('successButtonText').value = config.successPage.buttonText;
+    document.getElementById('successButtonColor').value = config.successPage.buttonColor;
+    document.getElementById('successPromoText').value = config.successPage.promoText;
+    document.getElementById('successPromoLinkURL').value = config.successPage.promoLinkURL;
+    updatePreviewFromInput(config.successPage.promoImageURL, 'promo-image-preview');
+    document.getElementById('successPromoImageURL').value = config.successPage.promoImageURL;
 }
 
 
@@ -92,7 +108,6 @@ async function handleFormSubmit(event) {
     saveButton.textContent = 'Saving...';
     saveButton.disabled = true;
 
-    // Reconstruct the config object from the form fields
     const newConfigData = {
         content: {
             pageTitle: document.getElementById('pageTitle').value,
@@ -126,24 +141,23 @@ async function handleFormSubmit(event) {
             promoLinkURL: document.getElementById('successPromoLinkURL').value,
             promoImageURL: document.getElementById('successPromoImageURL').value,
         },
-        // Keep non-editable print and validation settings from the original config
-        print: postcardConfig.print,
-        validation: postcardConfig.validation,
+        print: currentConfig.print,
+        validation: currentConfig.validation,
     };
 
     try {
         const response = await fetch('/api/update-config', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(newConfigData),
         });
 
         if (!response.ok) {
-            throw new Error('Server responded with an error.');
+            const errorResult = await response.json();
+            throw new Error(errorResult.message || 'Server responded with an error.');
         }
 
+        currentConfig = newConfigData;
         saveButton.textContent = 'Saved!';
         saveButton.classList.remove('bg-blue-600', 'hover:bg-blue-700');
         saveButton.classList.add('bg-green-500');
@@ -153,6 +167,7 @@ async function handleFormSubmit(event) {
         saveButton.textContent = 'Error!';
         saveButton.classList.remove('bg-blue-600', 'hover:bg-blue-700');
         saveButton.classList.add('bg-red-500');
+        alert(`Failed to save: ${error.message}`);
     } finally {
         setTimeout(() => {
             saveButton.textContent = 'Save Changes';
@@ -190,4 +205,4 @@ function updatePreviewFromInput(url, previewId) {
         preview.src = "";
     }
 }
-                                                                                                                                                                                                                                                                                
+
