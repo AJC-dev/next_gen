@@ -1,10 +1,4 @@
-import { createClient } from '@vercel/kv';
-
-// Initialize the KV client using the REDIS_URL from environment variables
-const kv = createClient({
-  url: process.env.REDIS_URL,
-});
-
+import { kv } from '@vercel/kv';
 
 export default async function handler(request, response) {
     try {
@@ -19,3 +13,4 @@ export default async function handler(request, response) {
         return response.status(500).json({ message: 'Error fetching configuration.', details: errorMessage });
     }
 }
+
