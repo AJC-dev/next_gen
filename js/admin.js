@@ -1,34 +1,35 @@
-// --- INITIALIZATION ---
-// No longer imports from static file, will fetch from DB
-loadInitialConfiguration();
-
+import { postcardConfig as fallbackConfig } from './config.js';
 
 // --- GLOBALS ---
 let currentConfig = {};
 
+// --- INITIALIZATION ---
+initializeAdminPanel();
+
 
 // --- FUNCTIONS ---
 
-async function loadInitialConfiguration() {
+async function initializeAdminPanel() {
+    // 1. Load the local fallback config first to ensure a stable state.
+    currentConfig = fallbackConfig;
+    populateForm(currentConfig);
+    setupEventListeners();
+
+    // 2. Then, try to fetch the live config from the database.
     try {
         const response = await fetch('/api/get-config');
-        if (!response.ok) {
-            // If DB is empty, import from local file as a fallback
-            const { postcardConfig } = await import('./config.js');
-            currentConfig = postcardConfig;
+        if (response.ok) {
+            const dbConfig = await response.json();
+            currentConfig = dbConfig;
+            // 3. If successful, re-populate the form with the live data.
+            populateForm(currentConfig);
         } else {
-            currentConfig = await response.json();
+             console.warn('No configuration found in database. Using local defaults.');
         }
     } catch (error) {
-        console.error("Could not fetch from DB, falling back to local config.", error);
-        const { postcardConfig } = await import('./config.js');
-        currentConfig = postcardConfig;
-    } finally {
-        populateForm(currentConfig);
-        setupEventListeners();
+        console.error("Could not fetch from DB, using local defaults.", error);
     }
 }
-
 
 function setupEventListeners() {
     document.getElementById('config-form').addEventListener('submit', handleFormSubmit);
