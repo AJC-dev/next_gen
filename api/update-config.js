@@ -6,6 +6,7 @@ const kv = createClient({
 });
 
 // Helper function to parse the request body stream into a JSON object
+// This version uses the classic Node.js event-based approach for maximum compatibility.
 function parseJSONBody(request) {
   return new Promise((resolve, reject) => {
     let body = '';
@@ -14,6 +15,7 @@ function parseJSONBody(request) {
     });
     request.on('end', () => {
       try {
+        // Handle cases where the body might be empty
         if (body === '') {
           resolve({});
           return;
@@ -35,8 +37,10 @@ export default async function handler(request, response) {
     }
 
     try {
+        // Use the new, more robust JSON parsing function
         const newConfig = await parseJSONBody(request);
         
+        // Save the new configuration object to the Vercel KV store
         await kv.set('postcard-config', newConfig);
 
         console.log("Successfully saved new configuration to Vercel KV.");
