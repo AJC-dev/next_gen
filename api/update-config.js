@@ -1,12 +1,12 @@
 import { createClient } from '@vercel/kv';
 
-// Initialize the KV client using the REDIS_URL from environment variables
+// Initialize the KV client with the new Upstash environment variables
 const kv = createClient({
-  url: process.env.REDIS_URL,
+  url: process.env.upstash_pc_KV_REST_API_URL,
+  token: process.env.upstash_pc_KV_REST_API_TOKEN,
 });
 
 // Helper function to parse the request body stream into a JSON object
-// This version uses the classic Node.js event-based approach for maximum compatibility.
 function parseJSONBody(request) {
   return new Promise((resolve, reject) => {
     let body = '';
@@ -15,7 +15,6 @@ function parseJSONBody(request) {
     });
     request.on('end', () => {
       try {
-        // Handle cases where the body might be empty
         if (body === '') {
           resolve({});
           return;
@@ -37,18 +36,16 @@ export default async function handler(request, response) {
     }
 
     try {
-        // Use the new, more robust JSON parsing function
         const newConfig = await parseJSONBody(request);
         
-        // Save the new configuration object to the Vercel KV store
         await kv.set('postcard-config', newConfig);
 
-        console.log("Successfully saved new configuration to Vercel KV.");
+        console.log("Successfully saved new configuration to Upstash KV.");
 
         return response.status(200).json({ message: 'Configuration saved successfully.' });
 
     } catch (error) {
-        console.error('Error saving configuration to Vercel KV:', error);
+        console.error('Error saving configuration to Upstash KV:', error);
         const errorMessage = error instanceof Error ? error.message : String(error);
         return response.status(500).json({ message: 'Error saving configuration.', details: errorMessage });
     }
