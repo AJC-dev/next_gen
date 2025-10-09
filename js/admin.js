@@ -38,18 +38,24 @@ function setupEventListeners() {
 
     accordionHeaders.forEach(header => {
         header.addEventListener('click', () => {
-            const currentlyOpen = header.classList.contains('open');
+            const content = header.nextElementSibling;
+            const isOpen = content.classList.contains('open');
+
+            // Close all accordions first
             accordionHeaders.forEach(h => {
                 h.classList.remove('open');
                 h.nextElementSibling.classList.remove('open');
             });
-            if (!currentlyOpen) {
+
+            // If the clicked one wasn't already open, open it
+            if (!isOpen) {
                 header.classList.add('open');
-                header.nextElementSibling.classList.add('open');
+                content.classList.add('open');
             }
         });
     });
     
+    // Open the first accordion by default
     const firstHeader = document.querySelector('.accordion-header');
     if (firstHeader) {
         firstHeader.classList.add('open');
@@ -82,7 +88,7 @@ function populateForm(config) {
     document.getElementById('findImageButtonColor').value = config.styles.findImageButtonColor;
     document.getElementById('sendPostcardButtonColor').value = config.styles.sendPostcardButtonColor;
 
-    // Confirmation Email Settings
+    // Verification Email Settings
     document.getElementById('emailSenderName').value = config.email.senderName;
     document.getElementById('emailSubject').value = config.email.subject;
     document.getElementById('emailBody').value = config.email.body;
