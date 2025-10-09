@@ -567,7 +567,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         let frontCanvas;
     
         if (forEmail) {
-            // --- ROBUST PREVIEW GENERATION ---
             const previewWidth = 1200;
             const previewHeight = Math.round(previewWidth * (a5HeightMM / a5WidthMM));
             
@@ -581,7 +580,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (appState.uploadedImage) {
                 if (appState.isPortrait) {
                     const tempCanvas = document.createElement('canvas');
-                    const tempWidth = Math.round(previewHeight * (a5HeightMM / a5WidthMM));
+                    const tempWidth = Math.round(previewHeight * (a5WidthMM / a5HeightMM));
                     const tempHeight = previewHeight;
                     tempCanvas.width = tempWidth;
                     tempCanvas.height = tempHeight;
@@ -596,21 +595,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     
                     const targetWidth = previewHeight;
                     const targetHeight = previewWidth;
-                    const targetAspect = targetWidth / targetHeight;
-                    const sourceAspect = tempCanvas.width / tempCanvas.height;
-                    let drawWidth, drawHeight, dx, dy;
-
-                    if (sourceAspect > targetAspect) {
-                        drawWidth = targetWidth;
-                        drawHeight = drawWidth / sourceAspect;
-                    } else {
-                        drawHeight = targetHeight;
-                        drawWidth = drawHeight * sourceAspect;
-                    }
-                    dx = -drawWidth / 2;
-                    dy = -drawHeight / 2;
-
-                    previewCtx.drawImage(tempCanvas, dx, dy, drawWidth, drawHeight);
+                    
+                    previewCtx.drawImage(tempCanvas, -targetWidth / 2, -targetHeight / 2, targetWidth, targetHeight);
                     previewCtx.restore();
 
                 } else { // Landscape
@@ -643,7 +629,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
     
-        // --- BACK CANVAS (Same for both preview and print) ---
         const backCanvas = document.createElement('canvas');
         backCanvas.width = mainContentWidthPx;
         backCanvas.height = mainContentHeightPx;
@@ -818,7 +803,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         dom.sender.modal.style.display = 'flex';
         dom.sender.nameInput.value = localStorage.getItem('senderName') || '';
         dom.sender.emailInput.value = localStorage.getItem('senderEmail') || '';
-        grecaptcha.render(dom.sender.recaptchaContainer, { 'sitekey' : appState.apiKeys.recaptchaSiteKey });
+        if (dom.sender.recaptchaContainer.innerHTML.trim() === '') {
+             grecaptcha.render(dom.sender.recaptchaContainer, { 'sitekey' : appState.apiKeys.recaptchaSiteKey });
+        } else {
+            grecaptcha.reset();
+        }
     }
     async function handleFinalSend() {
         const senderName = dom.sender.nameInput.value;
@@ -1256,3 +1245,4 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     initialize();
 });
+
