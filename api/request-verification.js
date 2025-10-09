@@ -1,64 +1,94 @@
-import sgMail from '@sendgrid/mail';
+import { createClient } from '@vercel/kv';
 import jwt from 'jsonwebtoken';
+import sgMail from '@sendgrid/mail';
+
+// Initialize KV client and SendGrid
+const kv = createClient({
+  url: process.env.upstash_pc_KV_REST_API_URL,
+  token: process.env.upstash_pc_KV_REST_API_TOKEN,
+});
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+// Helper to parse the request body
+function parseJSONBody(request) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    request.on('data', chunk => { body += chunk.toString(); });
+    request.on('end', () => {
+      try {
+        resolve(JSON.parse(body || '{}'));
+      } catch (e) {
+        reject(e);
+      }
+    });
+    request.on('error', (err) => { reject(err); });
+  });
+}
 
 export default async function handler(request, response) {
     if (request.method !== 'POST') {
-        return response.status(405).json({ success: false, message: 'Method Not Allowed' });
-    }
-
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-    const jwtSecret = process.env.JWT_SECRET;
-
-    if (!jwtSecret) {
-        console.error('JWT_SECRET is not set in environment variables.');
-        return response.status(500).json({ success: false, message: 'Server configuration error.' });
+        return response.status(405).json({ message: 'Method Not Allowed' });
     }
 
     try {
-        const { postcardData } = request.body;
+        const { postcardData } = await parseJSONBody(request);
+        const { sender } = postcardData;
+        
+        // Fetch the live configuration, which includes the limits
+        const config = await kv.get('postcard-config');
+        if (!config || !config.limits) {
+             throw new Error("Usage limits are not configured in the database.");
+        }
+        const { postcardLimit, limitDays } = config.limits;
 
-        if (!postcardData || !postcardData.sender || !postcardData.sender.email) {
-            return response.status(400).json({ success: false, message: 'Missing required data.' });
+        // Create a unique key for the user to track their sends
+        const userKey = `postcards:${sender.email}`;
+        const now = Date.now();
+        // Calculate the start of the time window for checking usage
+        const cutoff = now - (limitDays * 24 * 60 * 60 * 1000);
+
+        // Get the count of postcards sent by this user within the time window
+        const recentPostcardsCount = await kv.zcount(userKey, cutoff, now);
+        
+        // Enforce the limit
+        if (recentPostcardsCount >= postcardLimit) {
+            return response.status(429).json({ message: `Usage limit reached. You can send ${postcardLimit} postcards every ${limitDays} days.` });
         }
 
-        const { sender, recipient, frontImageUrlForEmail, backImageUrlWithAddress } = postcardData;
+        // If within limit, create a secure, short-lived token with the postcard data
+        const token = jwt.sign({ postcardData }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        
+        const proto = request.headers['x-forwarded-proto'] || 'http';
+        const host = request.headers['x-forwarded-host'] || request.headers.host;
+        const verificationUrl = new URL(`/api/verify-and-send?token=${token}`, `${proto}://${host}`).toString();
 
-        // Create a short-lived token containing the postcard data
-        const token = jwt.sign(postcardData, jwtSecret, { expiresIn: '1h' });
-
-        const verificationUrl = `https://${request.headers.host}/api/verify-and-send?token=${token}`;
-
-        const emailHtml = `
-            <div style="font-family: sans-serif; line-height: 1.6; text-align: center; max-width: 500px; margin: auto;">
-                <h2>Hi ${sender.name},</h2>
-                <p>To send ${recipient.name}'s postcard, click below:</p>
-                <div style="margin: 20px 0;">
-                    <a href="${verificationUrl}" style="background-color: #b9965b; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold;">Send Postcard</a>
-                </div>
-                <div style="margin-top: 20px; display: flex; justify-content: center; align-items: center;">
-                    <img src="${frontImageUrlForEmail}" alt="Postcard Front" style="max-width: 200px; border: 1px solid #ccc; margin: 5px;"/>
-                    <img src="${backImageUrlWithAddress}" alt="Postcard Back" style="max-width: 200px; border: 1px solid #ccc; margin: 5px;"/>
-                </div>
-            </div>
-        `;
-
+        // Send the verification email using SendGrid
         const msg = {
             to: sender.email,
-            from: {
-                email: process.env.SENDGRID_FROM_EMAIL,
-                name: "SixStarCuises"
-            },
-            subject: `Send ${recipient.name}'s Postcard`,
-            html: emailHtml,
+            from: 'verified-sender@yourdomain.com', // IMPORTANT: Replace with your verified SendGrid sender email
+            subject: postcardData.emailConfig.subject,
+            html: `
+                <div style="font-family: sans-serif; text-align: center; padding: 20px;">
+                    <h2>${postcardData.emailConfig.senderName}</h2>
+                    <p>${postcardData.emailConfig.body}</p>
+                    <a href="${verificationUrl}" style="background-color: #007bff; color: white; padding: 15px 25px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 20px 0;">Click Here to Verify & Send</a>
+                    <hr style="margin: 20px 0;"/>
+                    <p style="font-weight: bold;">Your Postcard Preview:</p>
+                    <p>Front:</p>
+                    <img src="${postcardData.frontImageUrlForEmail}" alt="Postcard Front" style="max-width: 100%; width: 400px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
+                    <p style="margin-top: 20px;">Back:</p>
+                    <img src="${postcardData.backImageUrlWithAddress}" alt="Postcard Back" style="max-width: 100%; width: 400px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
+                </div>
+            `,
         };
 
         await sgMail.send(msg);
 
-        return response.status(200).json({ success: true, message: 'Verification email sent.' });
+        return response.status(200).json({ message: 'Verification email sent.' });
 
     } catch (error) {
-        console.error('Error in request-verification function:', error);
-        return response.status(500).json({ success: false, message: 'Failed to send verification email.' });
+        console.error('Request verification error:', error);
+        return response.status(500).json({ message: 'Internal Server Error', details: error.message });
     }
 }
 

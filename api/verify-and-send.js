@@ -1,126 +1,77 @@
-import sgMail from '@sendgrid/mail';
+import { createClient } from '@vercel/kv';
 import jwt from 'jsonwebtoken';
 
+// This is a placeholder for your actual print API call
+async function sendToPrintAPI(postcardData) {
+    console.log("SIMULATING: Sending to Zap-Post API with data:", postcardData);
+    // In a real application, you would make a fetch() call to the Zap-Post endpoint here.
+    // For example:
+    // const response = await fetch('https://zappost.com/api/v1/prints', {
+    //     method: 'POST',
+    //     headers: { 'Authorization': `Bearer ${process.env.ZAPPOST_API_KEY}` },
+    //     body: JSON.stringify(postcardData)
+    // });
+    // if (!response.ok) {
+    //     throw new Error('Failed to send postcard to print API.');
+    // }
+    return { success: true };
+}
+
+
+const kv = createClient({
+  url: process.env.upstash_pc_KV_REST_API_URL,
+  token: process.env.upstash_pc_KV_REST_API_TOKEN,
+});
+
 export default async function handler(request, response) {
-    if (request.method !== 'GET') {
-        return response.status(405).json({ success: false, message: 'Method Not Allowed' });
-    }
+    // Vercel automatically parses query parameters
+    const { token } = request.query;
 
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-    const jwtSecret = process.env.JWT_SECRET;
-
-    if (!jwtSecret) {
-        console.error('JWT_SECRET is not set in environment variables.');
-        return response.status(500).send("Server configuration error.");
+    if (!token) {
+        return response.status(400).send('<h1>Error</h1><p>Missing verification token.</p>');
     }
 
     try {
-        const { token } = request.query;
-
-        if (!token) {
-            return response.status(400).send("Missing verification token.");
-        }
-
-        // Verify the token and extract the postcard data
-        const postcardData = jwt.verify(token, jwtSecret);
-        // Destructure all needed image URLs
-        const { sender, recipient, frontImageUrl, backImageUrl, frontImageUrlForEmail, backImageUrlWithAddress } = postcardData;
-
-
-        // --- ZAP~POST API LOGIC ---
-        const zapUsername = process.env.ZAPPOST_USERNAME;
-        const zapPassword = process.env.ZAPPOST_PASSWORD;
-        const zapCampaignId = process.env.ZAPPOST_CAMPAIGN_ID;
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const { postcardData } = decoded;
+        const { sender, recipient } = postcardData;
         
-        const customerId = `${sender.email}${recipient.postcode.replace(/\s/g, '')}`;
+        // Create a unique key for the user based on their email
+        const userKey = `postcards:${sender.email}`;
+        const now = Date.now();
+        // Create a unique ID for this specific postcard send event
+        const postcardId = `${userKey}:${now}`;
 
-        const apiPayload = {
-            campaignId: zapCampaignId,
-            scheduledSendDateId: "",
-            onlyValidRecords: true,
-            submissions: [
-                {
-                    customerid: customerId,
-                    email: sender.email,
-                    salutation: "",
-                    firstname: recipient.name,
-                    surname: "",
-                    companyname: "",
-                    address1: recipient.line1,
-                    address2: recipient.line2 || "",
-                    address3: "",
-                    city: recipient.city,
-                    postcode: recipient.postcode,
-                    country: recipient.country,
-                    currency: "GBP",
-                    language: "en",
-                    customdata: {
-                        "front": frontImageUrl,
-                        "message": backImageUrl, // This is the back image WITHOUT address
-                        "sender": sender.name
-                    }
-                }
-            ]
-        };
-
-        const basicAuth = Buffer.from(`${zapUsername}:${zapPassword}`).toString('base64');
-
-        const zapostResponse = await fetch('https://api.zappost.com/api/v1/records', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Basic ${basicAuth}`,
-                'Content-Type': 'application/json',
-                'Accept': '*/*'
-            },
-            body: JSON.stringify(apiPayload)
+        // Log the postcard send event using a sorted set for time-based queries
+        await kv.zadd(userKey, { score: now, member: postcardId });
+        
+        // (Optional but good practice) Store the full details of the postcard send
+        await kv.set(postcardId, {
+            sender: sender,
+            recipient: recipient,
+            sentAt: now,
+            frontImage: postcardData.frontImageUrl,
+            backImage: postcardData.backImageUrl
         });
 
-        if (zapostResponse.status !== 200) {
-            const errorText = await zapostResponse.text();
-            console.error('ZAP~POST API Error:', errorText);
-            throw new Error(`The print service returned an error.`);
-        }
-        
-        // --- SEND FINAL CONFIRMATION EMAIL (with new template) ---
-        const emailHtml = `
-            <div style="font-family: sans-serif; line-height: 1.6; text-align: center; max-width: 500px; margin: auto;">
-                <h2>Your postcard has been sent to ${recipient.name},</h2>
-                <p>It should arrive in the next few days.</p>
-                <div style="margin-top: 20px; display: flex; justify-content: center; align-items: center; flex-wrap: wrap;">
-                    <img src="${frontImageUrlForEmail}" alt="Postcard Front" style="max-width: 200px; border: 1px solid #ccc; margin: 5px;"/>
-                    <img src="${backImageUrlWithAddress}" alt="Postcard Back" style="max-width: 200px; border: 1px solid #ccc; margin: 5px;"/>
-                </div>
-                <div style="max-width: 300px; margin: 20px auto 0; text-align: center;">
-                    <a href="https://sixstarcruises.smilemail.app/?sendAgain=true" style="display: block; background-color: #b9965b; color: black; padding: 10px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; margin-bottom: 10px;">Send again, to someone else?</a>
-                    <a href="https://www.sixstarcruises.co.uk/" target="_blank" style="display: block; background-color: #062b3f; color: white; padding: 10px 24px; text-decoration: none; border-radius: 8px; font-weight: bold;">2026 Cruises - Spectacular Savings Event</a>
-                </div>
-                <div style="text-align: right; margin-top: 30px;">
-                    <p style="margin: 0; font-size: 12px; color: #555;">Powered by</p>
-                    <a href="https://zappost.com" target="_blank">
-                        <img src="https://sixstarcruises.smilemail.app/logo.png" alt="ZAP~POST Logo" style="width: 100px;"/>
-                    </a>
-                </div>
-            </div>
-        `;
-
-        const msg = {
-            to: sender.email,
-            from: {
-                email: process.env.SENDGRID_FROM_EMAIL,
-                name: "SixStar Cruises"
-            },
-            subject: `Your postcard to ${recipient.name} is on its way!`,
-            html: emailHtml,
-        };
-
-        await sgMail.send(msg);
+        // Make the final call to the print API
+        await sendToPrintAPI(postcardData);
 
         // Redirect to the success page
-        response.writeHead(302, { Location: '/success.html' });
-        response.end();
+        const proto = request.headers['x-forwarded-proto'] || 'http';
+        const host = request.headers['x-forwarded-host'] || request.headers.host;
+        const successUrl = new URL('/success.html', `${proto}://${host}`);
+        
+        // Perform a 302 redirect
+        response.writeHead(302, { Location: successUrl.toString() });
+        return response.end();
 
     } catch (error) {
-        console.error('Error in verify-and-send function:', error);
-        return response.status(500).send("An error occurred during verification.");
+        console.error('Verification error:', error);
+        if (error instanceof jwt.JsonWebTokenError) {
+            return response.status(401).send('<h1>Error</h1><p>Your verification link is invalid or has expired. Please try sending your postcard again.</p>');
+        }
+        return response.status(500).send('<h1>Error</h1><p>An unexpected error occurred during verification. Please try again later.</p>');
     }
 }
+
