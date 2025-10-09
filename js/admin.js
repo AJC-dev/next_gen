@@ -38,24 +38,18 @@ function setupEventListeners() {
 
     accordionHeaders.forEach(header => {
         header.addEventListener('click', () => {
-            const content = header.nextElementSibling;
-            const isOpen = content.classList.contains('open');
-
-            // Close all accordions first
+            const currentlyOpen = header.classList.contains('open');
             accordionHeaders.forEach(h => {
                 h.classList.remove('open');
                 h.nextElementSibling.classList.remove('open');
             });
-
-            // If the clicked one wasn't already open, open it
-            if (!isOpen) {
+            if (!currentlyOpen) {
                 header.classList.add('open');
-                content.classList.add('open');
+                header.nextElementSibling.classList.add('open');
             }
         });
     });
     
-    // Open the first accordion by default
     const firstHeader = document.querySelector('.accordion-header');
     if (firstHeader) {
         firstHeader.classList.add('open');
@@ -106,6 +100,10 @@ function populateForm(config) {
     document.getElementById('successPromoLinkURL').value = config.successPage.promoLinkURL;
     updatePreviewFromInput(config.successPage.promoImageURL, 'promo-image-preview');
     document.getElementById('successPromoImageURL').value = config.successPage.promoImageURL;
+    
+    // Usage Limits
+    document.getElementById('postcardLimit').value = config.limits.postcardLimit;
+    document.getElementById('limitDays').value = config.limits.limitDays;
 }
 
 
@@ -147,6 +145,10 @@ async function handleFormSubmit(event) {
             promoText: document.getElementById('successPromoText').value,
             promoLinkURL: document.getElementById('successPromoLinkURL').value,
             promoImageURL: document.getElementById('successPromoImageURL').value,
+        },
+        limits: {
+            postcardLimit: parseInt(document.getElementById('postcardLimit').value, 10),
+            limitDays: parseInt(document.getElementById('limitDays').value, 10)
         },
         print: currentConfig.print,
         validation: currentConfig.validation,
