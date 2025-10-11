@@ -35,21 +35,27 @@ function setupEventListeners() {
     document.getElementById('config-form').addEventListener('submit', handleFormSubmit);
 
     const accordionHeaders = document.querySelectorAll('.accordion-header');
-
     accordionHeaders.forEach(header => {
-        header.addEventListener('click', () => {
-            const currentlyOpen = header.classList.contains('open');
-            accordionHeaders.forEach(h => {
-                h.classList.remove('open');
-                h.nextElementSibling.classList.remove('open');
+        header.addEventListener('click', (event) => {
+            const clickedHeader = event.currentTarget;
+            const content = clickedHeader.nextElementSibling;
+            const isCurrentlyOpen = content.classList.contains('open');
+
+            // First, close all open sections
+            document.querySelectorAll('.accordion-content.open').forEach(openContent => {
+                openContent.classList.remove('open');
+                openContent.previousElementSibling.classList.remove('open');
             });
-            if (!currentlyOpen) {
-                header.classList.add('open');
-                header.nextElementSibling.classList.add('open');
+
+            // If the clicked section was not already the one that was open, open it.
+            if (!isCurrentlyOpen) {
+                content.classList.add('open');
+                clickedHeader.classList.add('open');
             }
         });
     });
     
+    // Open the first section by default
     const firstHeader = document.querySelector('.accordion-header');
     if (firstHeader) {
         firstHeader.classList.add('open');
