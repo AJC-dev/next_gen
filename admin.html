@@ -66,6 +66,17 @@
                             <label for="subtitleLinkColor" class="block text-sm font-medium text-gray-700 mb-1">Subtitle Link Colour</label>
                             <input type="color" id="subtitleLinkColor" class="admin-color-input w-full">
                         </div>
+                         <div class="flex items-end gap-4 md:col-span-2">
+                             <div class="w-1/2">
+                                <label for="loadingImageURL" class="block text-sm font-medium text-gray-700 mb-1">Page Loading GIF</label>
+                                <input type="text" id="loadingImageURL" class="admin-input w-full">
+                             </div>
+                             <div class="w-1/2 flex items-center gap-2">
+                                <img id="loading-image-preview" src="" alt="Loading GIF Preview" class="h-12 w-12 object-contain border rounded-md">
+                                <label for="loading-image-uploader" class="cursor-pointer bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-semibold py-2 px-3 rounded-md">Upload</label>
+                                <input type="file" id="loading-image-uploader" accept="image/gif" class="hidden">
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -118,7 +129,7 @@
                 </div>
             </div>
 
-            <!-- Accordion Section: Confirmation Email -->
+             <!-- Accordion Section: Confirmation Email -->
              <div class="border-b">
                 <div class="accordion-header p-4 cursor-pointer flex justify-between items-center">
                     <h2 class="text-lg font-semibold text-gray-700">Confirmation Email Settings</h2>
@@ -127,20 +138,21 @@
                 <div class="accordion-content">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-4">
                         <div>
-                            <label for="confirmationEmailSenderName" class="block text-sm font-medium text-gray-700 mb-1">Sender Name</label>
-                            <input type="text" id="confirmationEmailSenderName" class="admin-input w-full">
+                            <label for="confirmationSenderName" class="block text-sm font-medium text-gray-700 mb-1">Sender Name</label>
+                            <input type="text" id="confirmationSenderName" class="admin-input w-full">
                         </div>
                         <div>
-                            <label for="confirmationEmailSubject" class="block text-sm font-medium text-gray-700 mb-1">Subject Line</label>
-                            <input type="text" id="confirmationEmailSubject" class="admin-input w-full">
+                            <label for="confirmationSubject" class="block text-sm font-medium text-gray-700 mb-1">Subject Line</label>
+                            <input type="text" id="confirmationSubject" class="admin-input w-full">
                         </div>
                         <div class="md:col-span-2">
-                             <label for="confirmationEmailBody" class="block text-sm font-medium text-gray-700 mb-1">Email Body Text</label>
-                            <textarea id="confirmationEmailBody" rows="3" class="admin-input w-full"></textarea>
+                             <label for="confirmationBody" class="block text-sm font-medium text-gray-700 mb-1">Email Body Text</label>
+                            <textarea id="confirmationBody" rows="3" class="admin-input w-full"></textarea>
                         </div>
                     </div>
                 </div>
             </div>
+
 
             <!-- Accordion Section: Success Page -->
             <div class="border-b">
@@ -227,6 +239,7 @@
                     </div>
                 </div>
             </div>
+
 
             <div class="mt-8 flex justify-end">
                 <button type="submit" id="save-changes-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition duration-300">

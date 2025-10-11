@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title></title> 
-    <link id="favicon" rel="icon" type="image/x-icon" href="">
+    <title>SixStarCruises- Send Free Postcards</title>
+    <link id="favicon" rel="icon" type="image/x-icon" href="ssc_favicon.ico" />
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/masonry-layout@4/dist/masonry.pkgd.min.js" async></script>
@@ -15,12 +15,18 @@
 </head>
 <body class="bg-slate-50 text-gray-800 flex flex-col items-center min-h-screen p-4 md:p-8">
 
-    <div id="error-banner" class="hidden w-full max-w-2xl mx-auto bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert">
-        <p class="font-bold">Error</p>
-        <p id="error-banner-message"></p>
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-slate-50 flex items-center justify-center z-50">
+        <img id="loading-image" src="" alt="Loading..." class="h-16 w-16">
     </div>
 
-    <div class="w-full max-w-2xl mx-auto">
+    <div id="error-banner" class="hidden w-full max-w-2xl mx-auto bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-4" role="alert">
+      <strong class="font-bold">Error:</strong>
+      <span id="error-banner-message" class="block sm:inline">Something went wrong.</span>
+    </div>
+
+    <!-- Main Content (hidden by default) -->
+    <div id="main-content" class="w-full max-w-2xl mx-auto hidden">
         <header class="text-center mb-8">
             <h1 id="main-title" class="text-2xl md:text-3xl font-bold"></h1>
             <p id="subtitle" class="text-black mt-2"></p>
@@ -153,7 +159,9 @@
                              <div id="final-preview-back-container" class="aspect-[210/148] bg-white rounded-lg shadow-md relative"><img id="final-preview-back" class="w-full h-full object-cover rounded-lg cursor-pointer"></div>
                         </div>
                     </div>
-                    <button id="send-postcard-btn" class="w-full mt-6 text-white font-bold py-3 px-4 rounded-lg transition duration-300 shadow-md flex items-center justify-center gap-2"><span class="btn-text">Send Postcard</span></button>
+                    <button id="send-postcard-btn" class="w-full mt-6 text-white font-bold py-3 px-4 rounded-lg transition duration-300 shadow-md flex items-center justify-center gap-2">
+                        <span class="btn-text">Send Postcard</span>
+                    </button>
                 </div>
             </div>
         </main>
@@ -161,12 +169,12 @@
 
     <!-- SENDER DETAILS MODAL -->
      <div id="sender-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center p-4 z-50">
-        <div id="sender-details-view" class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm flex-col gap-4">
+        <div id="sender-details-view" class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm flex flex-col gap-4">
             <div class="flex justify-between items-center">
                 <h3 class="text-xl font-bold">Your Details</h3>
-                <button id="close-sender-modal-btn">&times;</button>
+                <button id="close-sender-modal-btn" class="text-2xl leading-none">&times;</button>
             </div>
-            <p id="sender-error-message" class="text-red-500 text-sm mt-2 text-center hidden"></p>
+            <p id="sender-error-message" class="hidden text-red-500 text-sm bg-red-100 p-2 rounded-md"></p>
             <input type="text" id="sender-name" placeholder="Enter Name" class="p-2 border rounded-lg mt-4" required>
             <input type="email" id="sender-email" placeholder="Enter Email Address" class="p-2 border rounded-lg mt-2" required>
             <div id="recaptcha-container" class="my-4 flex justify-center"></div>
@@ -185,7 +193,7 @@
     <!-- PIXABAY SEARCH MODAL -->
     <div id="search-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center p-4 z-50">
         <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl max-h-[90vh] flex flex-col">
-            <div class="flex justify-between items-center mb-4"><h3 class="text-xl font-bold">Search for an Image</h3><button id="close-search-modal-btn">&times;</button></div>
+            <div class="flex justify-between items-center mb-4"><h3 class="text-xl font-bold">Search for an Image</h3><button id="close-search-modal-btn" class="text-2xl leading-none">&times;</button></div>
             <div class="flex flex-col gap-2 mb-4 w-full">
                 <input type="text" id="search-input" placeholder="e.g., 'sunny beach'" class="w-full p-2 border rounded-lg">
                 <button id="search-btn" class="w-full bg-blue-500 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2"><span class="btn-text">Search</span></button>
