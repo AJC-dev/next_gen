@@ -71,7 +71,7 @@ export default async function handler(request, response) {
                 <div style="font-family: sans-serif; text-align: center; padding: 20px;">
                     <h2>${postcardData.emailConfig.senderName}</h2>
                     <p>${postcardData.emailConfig.body}</p>
-                    <a href="${verificationUrl}" style="background-color: #007bff; color: white; padding: 15px 25px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 20px 0;">Click Here to Verify & Send</a>
+                    <a href="${verificationUrl}" style="background-color: ${postcardData.emailConfig.buttonColor}; color: ${postcardData.emailConfig.buttonTextColor}; padding: 15px 25px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 20px 0;">Click Here to Verify & Send</a>
                     <hr style="margin: 20px 0;"/>
                     <p style="font-weight: bold;">Your Postcard Preview:</p>
                     <p>Front:</p>
