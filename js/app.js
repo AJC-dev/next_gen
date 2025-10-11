@@ -1,40 +1,39 @@
 import fallbackConfig from './config.js';
 
 let postcardConfig; // Will be populated from DB or fallback
+let dom = {}; // To be populated with DOM references
 
-// --- INITIALIZATION ---
-initialize();
-
-
-// --- FUNCTIONS ---
-async function initialize() {
-    // 1. Load the local fallback config first to ensure a stable state.
-    postcardConfig = fallbackConfig;
-    applyConfiguration();
-    
-    // 2. Then, try to fetch the live config from the database.
-    try {
-        const response = await fetch('/api/get-config');
-        if (response.ok) {
-            const dbConfig = await response.json();
-            postcardConfig = dbConfig;
-            // 3. If successful, re-apply the config with the live data.
-            applyConfiguration();
-        } else {
-             console.warn('No configuration found in database. Using local defaults.');
-        }
-    } catch (error) {
-        console.error("Could not fetch from DB, using local defaults.", error);
+// --- APPLICATION STATE ---
+const appState = {
+    uploadedImage: null,
+    imageSrcForResend: null,
+    imageOffsetX: 0,
+    imageOffsetY: 0,
+    imageZoom: 1.0,
+    messagePlaceholderInterval: null,
+    isPortrait: false,
+    frontText: {
+        text: '',
+        x: null,
+        y: null,
+        font: "'Gochi Hand', cursive",
+        size: 32,
+        width: 200,
+        color: '#FFFFFF',
+        rotation: 0
+    },
+    apiKeys: {
+        recaptchaSiteKey: '',
+        pixabayApiKey: ''
     }
-    
-    // 4. Initialize the rest of the app
-    initializePostcardCreator();
-}
+};
 
-
-// --- DOM ELEMENT REFERENCES ---
-// This will be populated after the DOM is loaded
-let dom = {};
+// --- MAIN INITIALIZATION ---
+// This is the main entry point, ensuring the DOM is ready first.
+document.addEventListener('DOMContentLoaded', () => {
+    populateDomReferences();
+    loadConfigAndInitialize();
+});
 
 function populateDomReferences() {
     dom = {
@@ -76,64 +75,63 @@ function populateDomReferences() {
         finalPreviewFrontContainer: document.getElementById('final-preview-front-container'),
         finalPreviewFront: document.getElementById('final-preview-front'),
         finalPreviewBack: document.getElementById('final-preview-back'),
-        sender: { 
-            modal: document.getElementById('sender-modal'), 
+        sender: {
+            modal: document.getElementById('sender-modal'),
             detailsView: document.getElementById('sender-details-view'),
             checkEmailView: document.getElementById('check-email-view'),
-            nameInput: document.getElementById('sender-name'), 
-            emailInput: document.getElementById('sender-email'), 
-            sendBtn: document.getElementById('final-send-btn'), 
-            closeBtn: document.getElementById('close-sender-modal-btn'), 
+            nameInput: document.getElementById('sender-name'),
+            emailInput: document.getElementById('sender-email'),
+            sendBtn: document.getElementById('final-send-btn'),
+            closeBtn: document.getElementById('close-sender-modal-btn'),
             recaptchaContainer: document.getElementById('recaptcha-container'),
             errorMessage: document.getElementById('sender-error-message')
         },
         search: { modal: document.getElementById('search-modal'), showBtn: document.getElementById('find-image-button'), closeBtn: document.getElementById('close-search-modal-btn'), input: document.getElementById('search-input'), searchBtn: document.getElementById('search-btn'), resultsContainer: document.getElementById('search-results'), loader: document.getElementById('search-loader') },
         zoom: { modal: document.getElementById('zoom-modal'), image: document.getElementById('zoomed-image'), closeBtn: document.getElementById('close-zoom-modal-btn')},
-        ticks: {
-            one: document.getElementById('tick-1'),
-            two: document.getElementById('tick-2'),
-            three: document.getElementById('tick-3'),
-            four: document.getElementById('tick-4')
-        },
+        ticks: { one: document.getElementById('tick-1'), two: document.getElementById('tick-2'), three: document.getElementById('tick-3'), four: document.getElementById('tick-4') },
         noThanksTextBtn: document.getElementById('no-thanks-text-btn'),
         errorBanner: document.getElementById('error-banner'),
-        errorBannerMessage: document.getElementById('error-banner-message')
+        errorBannerMessage: document.getElementById('error-banner-message'),
+        loadingOverlay: document.getElementById('loading-overlay'),
+        loadingImage: document.getElementById('loading-image'),
+        mainContent: document.getElementById('main-content'),
     };
 }
 
+async function loadConfigAndInitialize() {
+    // 1. Load the local fallback config first to ensure a stable state.
+    postcardConfig = fallbackConfig;
+    applyConfiguration(); // Apply fallback config to show something immediately
 
-// --- APPLICATION STATE ---
-const appState = { 
-    uploadedImage: null,
-    imageSrcForResend: null,
-    imageOffsetX: 0,
-    imageOffsetY: 0,
-    imageZoom: 1.0,
-    messagePlaceholderInterval: null,
-    isPortrait: false,
-    frontText: {
-        text: '',
-        x: null,
-        y: null,
-        font: "'Gochi Hand', cursive",
-        size: 32,
-        width: 200, 
-        color: '#FFFFFF',
-        rotation: 0
-    },
-    apiKeys: {
-        recaptchaSiteKey: '',
-        pixabayApiKey: ''
+    // 2. Then, try to fetch the live config from the database.
+    try {
+        const response = await fetch('/api/get-config');
+        if (response.ok) {
+            const dbConfig = await response.json();
+            postcardConfig = dbConfig;
+            // 3. If successful, re-apply the config with the live data.
+            applyConfiguration();
+        } else {
+             console.warn('No configuration found in database. Using local defaults.');
+        }
+    } catch (error) {
+        console.error("Could not fetch from DB, using local defaults.", error);
     }
-};
+    
+    // 4. Initialize the rest of the app's functionality and hide loading screen
+    initializePostcardCreator();
+    
+    dom.loadingOverlay.style.display = 'none';
+    dom.mainContent.style.display = 'block';
+}
+
 
 // --- CORE LOGIC ---
 
 function applyConfiguration() {
-    if(!dom.mainTitle) populateDomReferences();
-
     document.title = postcardConfig.content.pageTitle;
     dom.favicon.href = postcardConfig.content.faviconURL;
+    dom.loadingImage.src = postcardConfig.content.loadingImageURL;
     dom.mainTitle.textContent = postcardConfig.content.mainTitle;
     dom.mainTitle.style.color = postcardConfig.styles.titleColor;
 
@@ -1123,7 +1121,11 @@ function initializePostcardCreator() {
     dom.search.input.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleImageSearch(); });
     dom.sendPostcardBtn.addEventListener('click', handleSendPostcard);
     dom.sender.sendBtn.addEventListener('click', handleFinalSend);
-    dom.sender.closeBtn.addEventListener('click', () => dom.sender.modal.style.display = 'none');
+    dom.sender.closeBtn.addEventListener('click', () => {
+        dom.sender.modal.style.display = 'none';
+        dom.sender.detailsView.style.display = 'flex';
+        dom.sender.checkEmailView.style.display = 'none';
+    });
     dom.finalPreviewFront.addEventListener('click', () => { if (dom.finalPreviewFront.src) { dom.zoom.image.src = dom.finalPreviewFront.src; dom.zoom.modal.style.display = 'flex'; } });
     dom.finalPreviewBack.addEventListener('click', () => { if (dom.finalPreviewBack.src) { dom.zoom.image.src = dom.finalPreviewBack.src; dom.zoom.modal.style.display = 'flex'; } });
     dom.zoom.closeBtn.addEventListener('click', () => dom.zoom.modal.style.display = 'none');
