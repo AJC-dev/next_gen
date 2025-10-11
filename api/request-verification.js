@@ -65,7 +65,7 @@ export default async function handler(request, response) {
         // Send the verification email using SendGrid
         const msg = {
             to: sender.email,
-            from: 'verified-sender@yourdomain.com', // IMPORTANT: Replace with your verified SendGrid sender email
+            from: process.env.SENDGRID_FROM_EMAIL, // Use the verified sender from environment variables
             subject: postcardData.emailConfig.subject,
             html: `
                 <div style="font-family: sans-serif; text-align: center; padding: 20px;">
@@ -88,7 +88,7 @@ export default async function handler(request, response) {
 
     } catch (error) {
         console.error('Request verification error:', error);
-        return response.status(500).json({ message: 'Internal Server Error', details: error.message });
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        return response.status(500).json({ message: 'Internal Server Error', details: errorMessage });
     }
 }
-
