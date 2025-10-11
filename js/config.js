@@ -14,10 +14,15 @@ export default {
         findImageButtonColor: "#212529",
         sendPostcardButtonColor: "#212529"
     },
-    email: {
+    email: { // This is the VERIFICATION email
         senderName: "Six Star Cruises",
         subject: "Your Postcard Proof",
         body: "Here is the final proof of your postcard. Please click the link to confirm and send."
+    },
+    confirmationEmail: { // This is the CONFIRMATION email
+        senderName: "Six Star Cruises",
+        subject: "Your Postcard has been Sent!",
+        body: "Thank you for using our service. Your postcard is on its way."
     },
     successPage: {
         pageTitle: "Postcard Sent!",

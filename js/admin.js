@@ -93,6 +93,13 @@ function populateForm(config) {
     document.getElementById('emailSubject').value = config.email.subject;
     document.getElementById('emailBody').value = config.email.body;
 
+    // Confirmation Email Settings
+    if (config.confirmationEmail) {
+        document.getElementById('confirmationEmailSenderName').value = config.confirmationEmail.senderName;
+        document.getElementById('confirmationEmailSubject').value = config.confirmationEmail.subject;
+        document.getElementById('confirmationEmailBody').value = config.confirmationEmail.body;
+    }
+
     // Success Page Settings
     document.getElementById('successTitle').value = config.successPage.pageTitle;
     updatePreviewFromInput(config.successPage.faviconURL, 'success-favicon-preview');
@@ -135,10 +142,15 @@ async function handleFormSubmit(event) {
             findImageButtonColor: document.getElementById('findImageButtonColor').value,
             sendPostcardButtonColor: document.getElementById('sendPostcardButtonColor').value,
         },
-        email: {
+        email: { // Verification Email
             senderName: document.getElementById('emailSenderName').value,
             subject: document.getElementById('emailSubject').value,
             body: document.getElementById('emailBody').value,
+        },
+        confirmationEmail: { // Confirmation Email
+            senderName: document.getElementById('confirmationEmailSenderName').value,
+            subject: document.getElementById('confirmationEmailSubject').value,
+            body: document.getElementById('confirmationEmailBody').value,
         },
         successPage: {
             pageTitle: document.getElementById('successTitle').value,
