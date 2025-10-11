@@ -542,6 +542,7 @@ async function generatePostcardImages({ forEmail = false } = {}) {
     const mainContentWidthPx = Math.round((a5WidthMM / MM_TO_INCH) * dpi);
     const mainContentHeightPx = Math.round((a5HeightMM / MM_TO_INCH) * dpi);
     let frontCanvas;
+
     if (forEmail) {
         const previewWidth = 1200;
         const previewHeight = Math.round(previewWidth * (a5HeightMM / a5WidthMM));
@@ -551,6 +552,7 @@ async function generatePostcardImages({ forEmail = false } = {}) {
         const previewCtx = frontCanvas.getContext('2d');
         previewCtx.fillStyle = '#FFFFFF';
         previewCtx.fillRect(0, 0, previewWidth, previewHeight);
+
         if (appState.uploadedImage) {
             if (appState.isPortrait) {
                 const tempCanvas = document.createElement('canvas');
@@ -561,19 +563,36 @@ async function generatePostcardImages({ forEmail = false } = {}) {
                 const tempCtx = tempCanvas.getContext('2d');
                 const scaleFactor = tempWidth / dom.previewCanvas.el.width;
                 drawCleanFrontOnContext(tempCtx, tempWidth, tempHeight, scaleFactor);
+
                 previewCtx.save();
                 previewCtx.translate(previewWidth / 2, previewHeight / 2);
                 previewCtx.rotate(90 * Math.PI / 180);
-                const targetWidth = previewHeight;
-                const targetHeight = previewWidth;
-                previewCtx.drawImage(tempCanvas, -targetWidth / 2, -targetHeight / 2, targetWidth, targetHeight);
+
+                // Definitive fix for aspect ratio preservation
+                const rotatedContainerWidth = previewHeight;
+                const rotatedContainerHeight = previewWidth;
+                const sourceAspect = tempCanvas.width / tempCanvas.height;
+                const targetAspect = rotatedContainerWidth / rotatedContainerHeight;
+                let drawWidth, drawHeight;
+
+                if (sourceAspect > targetAspect) {
+                    drawWidth = rotatedContainerWidth;
+                    drawHeight = drawWidth / sourceAspect;
+                } else {
+                    drawHeight = rotatedContainerHeight;
+                    drawWidth = drawHeight * sourceAspect;
+                }
+                
+                previewCtx.drawImage(tempCanvas, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
                 previewCtx.restore();
-            } else {
+
+            } else { // Landscape
                 const scaleFactor = previewWidth / dom.previewCanvas.el.width;
                 drawCleanFrontOnContext(previewCtx, previewWidth, previewHeight, scaleFactor);
             }
         }
     } else {
+        // --- PRINT FILE GENERATION ---
         const frontCanvasWidth = appState.isPortrait ? mainContentHeightPx + bleedPxTotal : mainContentWidthPx + bleedPxTotal;
         const frontCanvasHeight = appState.isPortrait ? mainContentWidthPx + bleedPxTotal : mainContentHeightPx + bleedPxTotal;
         frontCanvas = document.createElement('canvas');
@@ -594,6 +613,7 @@ async function generatePostcardImages({ forEmail = false } = {}) {
             );
         }
     }
+
     const backCanvas = document.createElement('canvas');
     backCanvas.width = mainContentWidthPx;
     backCanvas.height = mainContentHeightPx;
