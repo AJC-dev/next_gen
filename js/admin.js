@@ -71,6 +71,23 @@ function setupEventListeners() {
     document.getElementById('loadingImageURL').addEventListener('input', (e) => updatePreviewFromInput(e.target.value, 'loading-image-preview'));
     document.getElementById('successFaviconURL').addEventListener('input', (e) => updatePreviewFromInput(e.target.value, 'success-favicon-preview'));
     document.getElementById('successPromoImageURL').addEventListener('input', (e) => updatePreviewFromInput(e.target.value, 'promo-image-preview'));
+
+    document.querySelectorAll('.copy-btn').forEach(button => {
+        button.addEventListener('click', (e) => {
+            const textToCopy = e.target.dataset.clipboardText;
+            const tempTextarea = document.createElement('textarea');
+            tempTextarea.value = textToCopy;
+            document.body.appendChild(tempTextarea);
+            tempTextarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempTextarea);
+            
+            e.target.textContent = 'Copied!';
+            setTimeout(() => {
+                 e.target.textContent = `Copy ${textToCopy}`;
+            }, 1500);
+        });
+    });
 }
 
 function populateForm(config) {
