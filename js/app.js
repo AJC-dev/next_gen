@@ -346,7 +346,7 @@ function getHandlePositions(metrics) {
     return {
         size: {
             x: x + (resizeHandleRelX * cos - resizeHandleRelY * sin),
-            y: y + (resizeHandleRelX * sin + resizeHandleRelY * cos)
+            y: y + (resizeHandleRelY * sin + resizeHandleRelY * cos)
         },
         rotate: {
             x: x + (rotateHandleRelX * cos - rotateHandleRelY * sin),
