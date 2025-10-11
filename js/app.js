@@ -202,26 +202,29 @@ function drawCoverImage(ctx, img, canvasWidth, canvasHeight, offsetX, offsetY, z
     ctx.drawImage(img, sx, sy, sWidth, sHeight, 0, 0, canvasWidth, canvasHeight);
 }
 
-function drawCleanFrontOnContext(ctx, width, height, scaleFactor, bleedPx = { x: 0, y: 0 }) {
-    if (appState.uploadedImage) {
+function drawCleanFrontOnContext(ctx, width, height, scaleFactor, bleedPx = 0) {
+     if (appState.uploadedImage) {
         ctx.save();
-        ctx.translate(bleedPx.x, bleedPx.y);
-        const scaledOffsetX = appState.imageOffsetX * scaleFactor;
-        const scaledOffsetY = appState.imageOffsetY * scaleFactor;
-        drawCoverImage(ctx, appState.uploadedImage, width, height, scaledOffsetX, scaledOffsetY, appState.imageZoom);
+        ctx.translate(bleedPx, bleedPx);
+        // When drawing the rotated preview, scaleFactor is calculated differently.
+        const effectiveScale = scaleFactor || (width / dom.previewCanvas.el.width);
+        const scaledOffsetX = appState.imageOffsetX * effectiveScale;
+        const scaledOffsetY = appState.imageOffsetY * effectiveScale;
+        drawCoverImage(ctx, appState.uploadedImage, width - (bleedPx * 2), height - (bleedPx * 2), scaledOffsetX, scaledOffsetY, appState.imageZoom);
         ctx.restore();
     }
     if (appState.frontText.text) {
         const { text, font, size, color, x, y, rotation, width: textWidth } = appState.frontText;
+        const effectiveScale = scaleFactor || (width / dom.previewCanvas.el.width);
         ctx.save();
         ctx.fillStyle = color;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        const textX = (x * scaleFactor) + bleedPx.x;
-        const textY = (y * scaleFactor) + bleedPx.y;
+        const textX = (x * effectiveScale) + bleedPx;
+        const textY = (y * effectiveScale) + bleedPx;
         ctx.translate(textX, textY);
         ctx.rotate(rotation * Math.PI / 180);
-        drawWrappedText(ctx, text, 0, 0, textWidth * scaleFactor, size * scaleFactor * 1.2, `${size * scaleFactor}px ${font}`);
+        drawWrappedText(ctx, text, 0, 0, textWidth * effectiveScale, size * effectiveScale * 1.2, `${size * effectiveScale}px ${font}`);
         ctx.restore();
     }
 }
@@ -346,7 +349,7 @@ function getHandlePositions(metrics) {
     return {
         size: {
             x: x + (resizeHandleRelX * cos - resizeHandleRelY * sin),
-            y: y + (resizeHandleRelY * sin + resizeHandleRelY * cos)
+            y: y + (resizeHandleRelX * sin + resizeHandleRelY * cos)
         },
         rotate: {
             x: x + (rotateHandleRelX * cos - rotateHandleRelY * sin),
@@ -538,83 +541,59 @@ async function generatePostcardImages({ forEmail = false } = {}) {
     await document.fonts.ready;
     const MM_TO_INCH = 25.4;
     const { dpi, a5WidthMM, a5HeightMM, bleedMM } = postcardConfig.print;
-    const bleedPxTotal = Math.round((bleedMM * 2 / MM_TO_INCH) * dpi);
-    const mainContentWidthPx = Math.round((a5WidthMM / MM_TO_INCH) * dpi);
-    const mainContentHeightPx = Math.round((a5HeightMM / MM_TO_INCH) * dpi);
-    let frontCanvas;
-
-    if (forEmail) {
-        const previewWidth = 1200;
-        const previewHeight = Math.round(previewWidth * (a5HeightMM / a5WidthMM));
-        frontCanvas = document.createElement('canvas');
-        frontCanvas.width = previewWidth;
-        frontCanvas.height = previewHeight;
-        const previewCtx = frontCanvas.getContext('2d');
-        previewCtx.fillStyle = '#FFFFFF';
-        previewCtx.fillRect(0, 0, previewWidth, previewHeight);
-
-        if (appState.uploadedImage) {
-            if (appState.isPortrait) {
-                const tempCanvas = document.createElement('canvas');
-                const tempWidth = Math.round(previewHeight * (a5WidthMM / a5HeightMM));
-                const tempHeight = previewHeight;
-                tempCanvas.width = tempWidth;
-                tempCanvas.height = tempHeight;
-                const tempCtx = tempCanvas.getContext('2d');
-                const scaleFactor = tempWidth / dom.previewCanvas.el.width;
-                drawCleanFrontOnContext(tempCtx, tempWidth, tempHeight, scaleFactor);
-
-                previewCtx.save();
-                previewCtx.translate(previewWidth / 2, previewHeight / 2);
-                previewCtx.rotate(90 * Math.PI / 180);
-
-                // Definitive fix for aspect ratio preservation
-                const rotatedContainerWidth = previewHeight;
-                const rotatedContainerHeight = previewWidth;
-                const sourceAspect = tempCanvas.width / tempCanvas.height;
-                const targetAspect = rotatedContainerWidth / rotatedContainerHeight;
-                let drawWidth, drawHeight;
-
-                if (sourceAspect > targetAspect) {
-                    drawWidth = rotatedContainerWidth;
-                    drawHeight = drawWidth / sourceAspect;
-                } else {
-                    drawHeight = rotatedContainerHeight;
-                    drawWidth = drawHeight * sourceAspect;
-                }
-                
-                previewCtx.drawImage(tempCanvas, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
-                previewCtx.restore();
-
-            } else { // Landscape
-                const scaleFactor = previewWidth / dom.previewCanvas.el.width;
-                drawCleanFrontOnContext(previewCtx, previewWidth, previewHeight, scaleFactor);
-            }
-        }
-    } else {
-        // --- PRINT FILE GENERATION ---
-        const frontCanvasWidth = appState.isPortrait ? mainContentHeightPx + bleedPxTotal : mainContentWidthPx + bleedPxTotal;
-        const frontCanvasHeight = appState.isPortrait ? mainContentWidthPx + bleedPxTotal : mainContentHeightPx + bleedPxTotal;
-        frontCanvas = document.createElement('canvas');
-        frontCanvas.width = frontCanvasWidth;
-        frontCanvas.height = frontCanvasHeight;
-        const frontCtx = frontCanvas.getContext('2d');
-        frontCtx.fillStyle = '#FFFFFF';
-        frontCtx.fillRect(0, 0, frontCanvasWidth, frontCanvasHeight);
-        if (appState.uploadedImage) {
-            const bleedOffset = bleedPxTotal / 2;
-            const scaleFactor = (appState.isPortrait ? mainContentHeightPx : mainContentWidthPx) / dom.previewCanvas.el.width;
-            drawCleanFrontOnContext(
-                frontCtx,
-                appState.isPortrait ? mainContentHeightPx : mainContentWidthPx,
-                appState.isPortrait ? mainContentWidthPx : mainContentHeightPx,
-                scaleFactor,
-                { x: bleedOffset, y: bleedOffset }
-            );
-        }
+    const bleedPxForPrint = forEmail ? 0 : Math.round((bleedMM / MM_TO_INCH) * dpi);
+    let isFinalPortraitForCanvas = appState.isPortrait;
+    
+    if (forEmail && appState.isPortrait) {
+        isFinalPortraitForCanvas = false;
     }
 
+    const A5_RATIO = a5WidthMM / a5HeightMM;
+    let finalWidthPx, finalHeightPx;
+
+    if (forEmail) {
+        const previewBaseWidth = 1200;
+        finalWidthPx = previewBaseWidth;
+        finalHeightPx = Math.round(previewBaseWidth / A5_RATIO);
+    } else {
+        const coreWidthPx = Math.round((a5WidthMM / MM_TO_INCH) * dpi);
+        const coreHeightPx = Math.round((a5HeightMM / MM_TO_INCH) * dpi);
+        if (isFinalPortraitForCanvas) {
+            finalHeightPx = coreWidthPx + (bleedPxForPrint * 2);
+            finalWidthPx = coreHeightPx + (bleedPxForPrint * 2);
+        } else {
+            finalWidthPx = coreWidthPx + (bleedPxForPrint * 2);
+            finalHeightPx = coreHeightPx + (bleedPxForPrint * 2);
+        }
+    }
+    
+    const frontCanvas = document.createElement('canvas');
+    frontCanvas.width = finalWidthPx;
+    frontCanvas.height = finalHeightPx;
+    const frontCtx = frontCanvas.getContext('2d');
+    
+    if (appState.uploadedImage) {
+        if (forEmail && appState.isPortrait) {
+            frontCtx.save();
+            frontCtx.translate(finalWidthPx / 2, finalHeightPx / 2);
+            frontCtx.rotate(90 * Math.PI / 180);
+            frontCtx.translate(-finalHeightPx / 2, -finalWidthPx / 2);
+            const scaleFactor = finalHeightPx / dom.previewCanvas.el.height;
+            drawCleanFrontOnContext(frontCtx, finalHeightPx, finalWidthPx, scaleFactor, 0);
+            frontCtx.restore();
+        } else {
+            const bleedToApply = forEmail ? 0 : bleedPxForPrint;
+            drawCleanFrontOnContext(frontCtx, finalWidthPx, finalHeightPx, null, bleedToApply);
+        }
+    } else {
+        frontCtx.fillStyle = '#FFFFFF';
+        frontCtx.fillRect(0, 0, finalWidthPx, finalHeightPx);
+    }
+
+    // --- BACK CANVAS (Same for both preview and print) ---
     const backCanvas = document.createElement('canvas');
+    const mainContentWidthPx = Math.round((a5WidthMM / MM_TO_INCH) * dpi);
+    const mainContentHeightPx = Math.round((a5HeightMM / MM_TO_INCH) * dpi);
     backCanvas.width = mainContentWidthPx;
     backCanvas.height = mainContentHeightPx;
     const backCtx = backCanvas.getContext('2d');
@@ -677,6 +656,7 @@ async function generatePostcardImages({ forEmail = false } = {}) {
     });
     return { frontCanvas, backCanvas };
 }
+
 
 async function updateFinalPreviews() {
     const { frontCanvas, backCanvas } = await generatePostcardImages({ forEmail: true });
