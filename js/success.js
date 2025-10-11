@@ -1,21 +1,48 @@
-import { postcardConfig } from './config.js';
+import fallbackConfig from './config.js';
 
-document.addEventListener('DOMContentLoaded', () => {
-    const { successPage } = postcardConfig;
+document.addEventListener('DOMContentLoaded', async () => {
+    let config;
 
-    document.getElementById('success-page-title').textContent = successPage.title;
-    
-    const heading = document.getElementById('success-heading');
-    heading.textContent = successPage.heading;
-    heading.style.color = successPage.headingColor;
+    try {
+        const response = await fetch('/api/get-config');
+        if (response.ok) {
+            config = await response.json();
+        } else {
+            console.warn('Could not fetch live config, using fallback.');
+            config = fallbackConfig;
+        }
+    } catch (error) {
+        console.error('Error fetching live config, using fallback.', error);
+        config = fallbackConfig;
+    }
 
-    document.getElementById('success-subheading').textContent = successPage.subheading;
-    
-    const button = document.getElementById('success-button');
-    button.textContent = successPage.buttonText;
-    button.style.backgroundColor = successPage.buttonColor;
-
-    document.getElementById('success-promo-text').textContent = successPage.promoText;
-    document.getElementById('success-promo-image-link').href = successPage.promoLinkURL;
-    document.getElementById('success-promo-image').src = successPage.promoImageURL;
+    if (config && config.successPage) {
+        applySuccessPageConfig(config.successPage);
+    } else {
+        console.error('Success page configuration is missing.');
+    }
 });
+
+function applySuccessPageConfig(successConfig) {
+    document.title = successConfig.pageTitle;
+    document.getElementById('success-favicon').href = successConfig.faviconURL;
+    
+    document.getElementById('success-heading').textContent = successConfig.heading;
+    document.getElementById('success-heading').style.color = successConfig.headingColor;
+    
+    document.getElementById('success-subheading').textContent = successConfig.subheading;
+
+    const button = document.getElementById('success-button');
+    button.textContent = successConfig.buttonText;
+    button.style.backgroundColor = successConfig.buttonColor;
+
+    document.getElementById('success-promo-text').textContent = successConfig.promoText;
+
+    const promoLink = document.getElementById('success-promo-link');
+    promoLink.href = successConfig.promoLinkURL;
+
+    const promoImage = document.getElementById('success-promo-image');
+    promoImage.src = successConfig.promoImageURL;
+    promoImage.alt = `${successConfig.promoLinkText} Logo`; // Add alt text for accessibility
+}
+

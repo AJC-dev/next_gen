@@ -1,4 +1,4 @@
-import { postcardConfig as fallbackConfig } from './config.js';
+import fallbackConfig from './config.js';
 
 // --- GLOBALS ---
 let currentConfig = {};

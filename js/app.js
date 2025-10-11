@@ -9,8 +9,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         postcardConfig = await response.json();
     } catch (error) {
         console.warn("Using local fallback configuration.", error);
-        const { postcardConfig: localConfig } = await import('./config.js');
-        postcardConfig = localConfig;
+        // Correctly handle dynamic import of a default export
+        const module = await import('./config.js');
+        postcardConfig = module.default;
     }
 
     // --- APPLICATION STATE ---
@@ -347,7 +348,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return {
             size: {
                 x: x + (resizeHandleRelX * cos - resizeHandleRelY * sin),
-                y: y + (resizeHandleRelX * sin + resizeHandleRelY * cos)
+                y: y + (resizeHandleRelY * sin + resizeHandleRelY * cos)
             },
             rotate: {
                 x: x + (rotateHandleRelX * cos - rotateHandleRelY * sin),
@@ -567,6 +568,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         let frontCanvas;
     
         if (forEmail) {
+            // --- ROBUST PREVIEW GENERATION ---
             const previewWidth = 1200;
             const previewHeight = Math.round(previewWidth * (a5HeightMM / a5WidthMM));
             
