@@ -202,28 +202,34 @@ function drawCoverImage(ctx, img, canvasWidth, canvasHeight, offsetX, offsetY, z
     ctx.drawImage(img, sx, sy, sWidth, sHeight, 0, 0, canvasWidth, canvasHeight);
 }
 
-function drawCleanFrontOnContext(ctx, width, height, scaleFactor, bleedPx = 0) {
-     if (appState.uploadedImage) {
+function drawCleanFrontOnContext(ctx, width, height, bleedPx = 0) {
+    const sourceCanvas = dom.previewCanvas.el;
+    
+    // Determine scale factor based on width, as it's the constant dimension in landscape.
+    // In the rotated case, the new 'width' corresponds to the source's 'height'.
+    const scaleFactor = width / (appState.isPortrait && width > height ? sourceCanvas.height : sourceCanvas.width);
+
+    if (appState.uploadedImage) {
         ctx.save();
         ctx.translate(bleedPx, bleedPx);
-        const effectiveScale = scaleFactor || (width / dom.previewCanvas.el.width);
-        const scaledOffsetX = appState.imageOffsetX * effectiveScale;
-        const scaledOffsetY = appState.imageOffsetY * effectiveScale;
+        const scaledOffsetX = appState.imageOffsetX * scaleFactor;
+        const scaledOffsetY = appState.imageOffsetY * scaleFactor;
         drawCoverImage(ctx, appState.uploadedImage, width - (bleedPx * 2), height - (bleedPx * 2), scaledOffsetX, scaledOffsetY, appState.imageZoom);
         ctx.restore();
     }
     if (appState.frontText.text) {
         const { text, font, size, color, x, y, rotation, width: textWidth } = appState.frontText;
-        const effectiveScale = scaleFactor || (width / dom.previewCanvas.el.width);
         ctx.save();
         ctx.fillStyle = color;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        const textX = (x * effectiveScale) + bleedPx;
-        const textY = (y * effectiveScale) + bleedPx;
+        
+        const textX = (x * scaleFactor) + bleedPx;
+        const textY = (y * scaleFactor) + bleedPx;
+
         ctx.translate(textX, textY);
         ctx.rotate(rotation * Math.PI / 180);
-        drawWrappedText(ctx, text, 0, 0, textWidth * effectiveScale, size * effectiveScale * 1.2, `${size * effectiveScale}px ${font}`);
+        drawWrappedText(ctx, text, 0, 0, textWidth * scaleFactor, size * scaleFactor * 1.2, `${size * scaleFactor}px ${font}`);
         ctx.restore();
     }
 }
@@ -557,7 +563,7 @@ async function generatePostcardImages({ forEmail = false } = {}) {
     } else {
         const coreWidthPx = Math.round((a5WidthMM / MM_TO_INCH) * dpi);
         const coreHeightPx = Math.round((a5HeightMM / MM_TO_INCH) * dpi);
-        if (isFinalPortraitForCanvas) {
+        if (appState.isPortrait) {
             finalHeightPx = coreWidthPx + (bleedPxForPrint * 2);
             finalWidthPx = coreHeightPx + (bleedPxForPrint * 2);
         } else {
@@ -578,14 +584,11 @@ async function generatePostcardImages({ forEmail = false } = {}) {
             frontCtx.rotate(90 * Math.PI / 180);
             frontCtx.translate(-finalHeightPx / 2, -finalWidthPx / 2);
             
-            // This logic correctly scales the portrait content to fit the rotated landscape canvas.
-            const scaleFactor = finalHeightPx / dom.previewCanvas.el.height;
-            drawCleanFrontOnContext(frontCtx, finalHeightPx, finalWidthPx, scaleFactor, 0);
+            drawCleanFrontOnContext(frontCtx, finalHeightPx, finalWidthPx, bleedPxForPrint);
 
             frontCtx.restore();
         } else {
-            const bleedToApply = forEmail ? 0 : bleedPxForPrint;
-            drawCleanFrontOnContext(frontCtx, finalWidthPx, finalHeightPx, null, bleedToApply);
+            drawCleanFrontOnContext(frontCtx, finalWidthPx, finalHeightPx, bleedPxForPrint);
         }
     } else {
         frontCtx.fillStyle = '#FFFFFF';
