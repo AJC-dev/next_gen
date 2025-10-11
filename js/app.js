@@ -206,7 +206,6 @@ function drawCleanFrontOnContext(ctx, width, height, scaleFactor, bleedPx = 0) {
      if (appState.uploadedImage) {
         ctx.save();
         ctx.translate(bleedPx, bleedPx);
-        // When drawing the rotated preview, scaleFactor is calculated differently.
         const effectiveScale = scaleFactor || (width / dom.previewCanvas.el.width);
         const scaledOffsetX = appState.imageOffsetX * effectiveScale;
         const scaledOffsetY = appState.imageOffsetY * effectiveScale;
@@ -578,8 +577,11 @@ async function generatePostcardImages({ forEmail = false } = {}) {
             frontCtx.translate(finalWidthPx / 2, finalHeightPx / 2);
             frontCtx.rotate(90 * Math.PI / 180);
             frontCtx.translate(-finalHeightPx / 2, -finalWidthPx / 2);
+            
+            // This logic correctly scales the portrait content to fit the rotated landscape canvas.
             const scaleFactor = finalHeightPx / dom.previewCanvas.el.height;
             drawCleanFrontOnContext(frontCtx, finalHeightPx, finalWidthPx, scaleFactor, 0);
+
             frontCtx.restore();
         } else {
             const bleedToApply = forEmail ? 0 : bleedPxForPrint;
