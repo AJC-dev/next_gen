@@ -139,8 +139,11 @@ function applyConfiguration() {
     dom.subtitle.innerHTML = `${postcardConfig.content.subtitleText} ${subtitleLink}.`;
 
     dom.uploadButton.style.backgroundColor = postcardConfig.styles.uploadButtonColor;
+    dom.uploadButton.style.color = postcardConfig.styles.uploadButtonTextColor;
     dom.findImageButton.style.backgroundColor = postcardConfig.styles.findImageButtonColor;
+    dom.findImageButton.style.color = postcardConfig.styles.findImageButtonTextColor;
     dom.sendPostcardBtn.style.backgroundColor = postcardConfig.styles.sendPostcardButtonColor;
+    dom.sendPostcardBtn.style.color = postcardConfig.styles.sendPostcardButtonTextColor;
 }
 
 async function checkForProfanityAPI(text, warningElement) {
@@ -829,8 +832,11 @@ async function handleFinalSend() {
             emailConfig: {
                 senderName: postcardConfig.email.senderName,
                 subject: postcardConfig.email.subject,
-                body: postcardConfig.email.body
-            }
+                body: postcardConfig.email.body,
+                buttonColor: postcardConfig.styles.sendPostcardButtonColor,
+                buttonTextColor: postcardConfig.styles.sendPostcardButtonTextColor,
+            },
+             confirmationEmailConfig: postcardConfig.confirmationEmail
         };
         const verificationResponse = await fetch('/api/request-verification', {
             method: 'POST',
@@ -1123,7 +1129,7 @@ function initializePostcardCreator() {
     dom.sender.sendBtn.addEventListener('click', handleFinalSend);
     dom.sender.closeBtn.addEventListener('click', () => {
         dom.sender.modal.style.display = 'none';
-        dom.sender.detailsView.style.display = 'flex';
+        dom.sender.detailsView.style.display = 'flex'; // Use flex for visibility
         dom.sender.checkEmailView.style.display = 'none';
     });
     dom.finalPreviewFront.addEventListener('click', () => { if (dom.finalPreviewFront.src) { dom.zoom.image.src = dom.finalPreviewFront.src; dom.zoom.modal.style.display = 'flex'; } });

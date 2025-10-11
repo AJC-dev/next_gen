@@ -63,10 +63,12 @@ function setupEventListeners() {
     }
 
     setupImageUploader('favicon-uploader', 'faviconURL', 'favicon-preview');
+    setupImageUploader('loading-image-uploader', 'loadingImageURL', 'loading-image-preview');
     setupImageUploader('success-favicon-uploader', 'successFaviconURL', 'success-favicon-preview');
     setupImageUploader('promo-image-uploader', 'successPromoImageURL', 'promo-image-preview');
 
     document.getElementById('faviconURL').addEventListener('input', (e) => updatePreviewFromInput(e.target.value, 'favicon-preview'));
+    document.getElementById('loadingImageURL').addEventListener('input', (e) => updatePreviewFromInput(e.target.value, 'loading-image-preview'));
     document.getElementById('successFaviconURL').addEventListener('input', (e) => updatePreviewFromInput(e.target.value, 'success-favicon-preview'));
     document.getElementById('successPromoImageURL').addEventListener('input', (e) => updatePreviewFromInput(e.target.value, 'promo-image-preview'));
 }
@@ -76,6 +78,8 @@ function populateForm(config) {
     document.getElementById('pageTitle').value = config.content.pageTitle;
     updatePreviewFromInput(config.content.faviconURL, 'favicon-preview');
     document.getElementById('faviconURL').value = config.content.faviconURL;
+    updatePreviewFromInput(config.content.loadingImageURL, 'loading-image-preview');
+    document.getElementById('loadingImageURL').value = config.content.loadingImageURL;
     document.getElementById('mainTitle').value = config.content.mainTitle;
     document.getElementById('titleColor').value = config.styles.titleColor;
     document.getElementById('subtitleText').value = config.content.subtitleText;
@@ -85,8 +89,11 @@ function populateForm(config) {
     
     // Button Colours
     document.getElementById('uploadButtonColor').value = config.styles.uploadButtonColor;
+    document.getElementById('uploadButtonTextColor').value = config.styles.uploadButtonTextColor;
     document.getElementById('findImageButtonColor').value = config.styles.findImageButtonColor;
+    document.getElementById('findImageButtonTextColor').value = config.styles.findImageButtonTextColor;
     document.getElementById('sendPostcardButtonColor').value = config.styles.sendPostcardButtonColor;
+    document.getElementById('sendPostcardButtonTextColor').value = config.styles.sendPostcardButtonTextColor;
 
     // Verification Email Settings
     document.getElementById('emailSenderName').value = config.email.senderName;
@@ -94,11 +101,9 @@ function populateForm(config) {
     document.getElementById('emailBody').value = config.email.body;
 
     // Confirmation Email Settings
-    if (config.confirmationEmail) {
-        document.getElementById('confirmationEmailSenderName').value = config.confirmationEmail.senderName;
-        document.getElementById('confirmationEmailSubject').value = config.confirmationEmail.subject;
-        document.getElementById('confirmationEmailBody').value = config.confirmationEmail.body;
-    }
+    document.getElementById('confirmationSenderName').value = config.confirmationEmail.senderName;
+    document.getElementById('confirmationSubject').value = config.confirmationEmail.subject;
+    document.getElementById('confirmationBody').value = config.confirmationEmail.body;
 
     // Success Page Settings
     document.getElementById('successTitle').value = config.successPage.pageTitle;
@@ -109,6 +114,7 @@ function populateForm(config) {
     document.getElementById('successSubheading').value = config.successPage.subheading;
     document.getElementById('successButtonText').value = config.successPage.buttonText;
     document.getElementById('successButtonColor').value = config.successPage.buttonColor;
+    document.getElementById('successButtonTextColor').value = config.successPage.buttonTextColor;
     document.getElementById('successPromoText').value = config.successPage.promoText;
     document.getElementById('successPromoLinkURL').value = config.successPage.promoLinkURL;
     updatePreviewFromInput(config.successPage.promoImageURL, 'promo-image-preview');
@@ -130,6 +136,7 @@ async function handleFormSubmit(event) {
         content: {
             pageTitle: document.getElementById('pageTitle').value,
             faviconURL: document.getElementById('faviconURL').value,
+            loadingImageURL: document.getElementById('loadingImageURL').value,
             mainTitle: document.getElementById('mainTitle').value,
             subtitleText: document.getElementById('subtitleText').value,
             subtitleLinkText: document.getElementById('subtitleLinkText').value,
@@ -139,18 +146,21 @@ async function handleFormSubmit(event) {
             titleColor: document.getElementById('titleColor').value,
             subtitleLinkColor: document.getElementById('subtitleLinkColor').value,
             uploadButtonColor: document.getElementById('uploadButtonColor').value,
+            uploadButtonTextColor: document.getElementById('uploadButtonTextColor').value,
             findImageButtonColor: document.getElementById('findImageButtonColor').value,
+            findImageButtonTextColor: document.getElementById('findImageButtonTextColor').value,
             sendPostcardButtonColor: document.getElementById('sendPostcardButtonColor').value,
+            sendPostcardButtonTextColor: document.getElementById('sendPostcardButtonTextColor').value,
         },
-        email: { // Verification Email
+        email: {
             senderName: document.getElementById('emailSenderName').value,
             subject: document.getElementById('emailSubject').value,
             body: document.getElementById('emailBody').value,
         },
-        confirmationEmail: { // Confirmation Email
-            senderName: document.getElementById('confirmationEmailSenderName').value,
-            subject: document.getElementById('confirmationEmailSubject').value,
-            body: document.getElementById('confirmationEmailBody').value,
+        confirmationEmail: {
+            senderName: document.getElementById('confirmationSenderName').value,
+            subject: document.getElementById('confirmationSubject').value,
+            body: document.getElementById('confirmationBody').value,
         },
         successPage: {
             pageTitle: document.getElementById('successTitle').value,
@@ -160,6 +170,7 @@ async function handleFormSubmit(event) {
             subheading: document.getElementById('successSubheading').value,
             buttonText: document.getElementById('successButtonText').value,
             buttonColor: document.getElementById('successButtonColor').value,
+            buttonTextColor: document.getElementById('successButtonTextColor').value,
             promoText: document.getElementById('successPromoText').value,
             promoLinkURL: document.getElementById('successPromoLinkURL').value,
             promoImageURL: document.getElementById('successPromoImageURL').value,

@@ -12,8 +12,11 @@ export default {
         titleColor: "#b9965b",
         subtitleLinkColor: "#b9965b",
         uploadButtonColor: "#b9965b",
+        uploadButtonTextColor: "#FFFFFF",
         findImageButtonColor: "#212529",
-        sendPostcardButtonColor: "#212529"
+        findImageButtonTextColor: "#FFFFFF",
+        sendPostcardButtonColor: "#212529",
+        sendPostcardButtonTextColor: "#FFFFFF",
     },
     email: {
         senderName: "Six Star Cruises",
@@ -33,6 +36,7 @@ export default {
         subheading: "Hope you're having a great holiday.",
         buttonText: "Send again, to someone else?",
         buttonColor: "#212529",
+        buttonTextColor: "#FFFFFF",
         promoText: "Savings Event: Book next year with savings of up to 40% and Free Business Class Flights",
         promoLinkURL: "https://www.sixstarcruises.co.uk/",
         promoImageURL: "sixstars.png"
