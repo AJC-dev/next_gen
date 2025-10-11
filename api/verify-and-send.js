@@ -50,15 +50,19 @@ export default async function handler(request, response) {
         // Make the final call to the print API
         await sendToPrintAPI(postcardData);
 
+        // Replace variables in subject and body
+        let subject = confirmationEmailConfig.subject.replace(/{{senderName}}/g, sender.name).replace(/{{recipientName}}/g, recipient.name);
+        let body = confirmationEmailConfig.body.replace(/{{senderName}}/g, sender.name).replace(/{{recipientName}}/g, recipient.name);
+
         // Send the final confirmation email
         const confirmationMsg = {
             to: sender.email,
             from: process.env.SENDGRID_FROM_EMAIL,
-            subject: confirmationEmailConfig.subject,
+            subject: subject,
             html: `
                 <div style="font-family: sans-serif; text-align: center; padding: 20px;">
                     <h2>${confirmationEmailConfig.senderName}</h2>
-                    <p>${confirmationEmailConfig.body}</p>
+                    <p>${body}</p>
                 </div>
             `
         };

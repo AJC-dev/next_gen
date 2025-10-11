@@ -32,7 +32,7 @@ export default async function handler(request, response) {
 
     try {
         const { postcardData } = await parseJSONBody(request);
-        const { sender } = postcardData;
+        const { sender, recipient, emailConfig } = postcardData;
         
         // Fetch the live configuration, which includes the limits
         const config = await kv.get('postcard-config');
@@ -41,37 +41,34 @@ export default async function handler(request, response) {
         }
         const { postcardLimit, limitDays } = config.limits;
 
-        // Create a unique key for the user to track their sends
         const userKey = `postcards:${sender.email}`;
         const now = Date.now();
-        // Calculate the start of the time window for checking usage
         const cutoff = now - (limitDays * 24 * 60 * 60 * 1000);
-
-        // Get the count of postcards sent by this user within the time window
         const recentPostcardsCount = await kv.zcount(userKey, cutoff, now);
         
-        // Enforce the limit
         if (recentPostcardsCount >= postcardLimit) {
             return response.status(429).json({ message: `Usage limit reached. You can send ${postcardLimit} postcards every ${limitDays} days.` });
         }
 
-        // If within limit, create a secure, short-lived token with the postcard data
         const token = jwt.sign({ postcardData }, process.env.JWT_SECRET, { expiresIn: '1h' });
         
         const proto = request.headers['x-forwarded-proto'] || 'http';
         const host = request.headers['x-forwarded-host'] || request.headers.host;
         const verificationUrl = new URL(`/api/verify-and-send?token=${token}`, `${proto}://${host}`).toString();
 
-        // Send the verification email using SendGrid
+        // Replace variables in subject and body
+        let subject = emailConfig.subject.replace(/{{senderName}}/g, sender.name).replace(/{{recipientName}}/g, recipient.name);
+        let body = emailConfig.body.replace(/{{senderName}}/g, sender.name).replace(/{{recipientName}}/g, recipient.name);
+
         const msg = {
             to: sender.email,
-            from: process.env.SENDGRID_FROM_EMAIL, // Use the verified sender from environment variables
-            subject: postcardData.emailConfig.subject,
+            from: process.env.SENDGRID_FROM_EMAIL,
+            subject: subject,
             html: `
                 <div style="font-family: sans-serif; text-align: center; padding: 20px;">
-                    <h2>${postcardData.emailConfig.senderName}</h2>
-                    <p>${postcardData.emailConfig.body}</p>
-                    <a href="${verificationUrl}" style="background-color: ${postcardData.emailConfig.buttonColor}; color: ${postcardData.emailConfig.buttonTextColor}; padding: 15px 25px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 20px 0;">Click Here to Verify & Send</a>
+                    <h2>${emailConfig.senderName}</h2>
+                    <p>${body}</p>
+                    <a href="${verificationUrl}" style="background-color: ${emailConfig.buttonColor}; color: ${emailConfig.buttonTextColor}; padding: 15px 25px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 20px 0;">Click Here to Verify & Send</a>
                     <hr style="margin: 20px 0;"/>
                     <p style="font-weight: bold;">Your Postcard Preview:</p>
                     <p>Front:</p>
@@ -92,3 +89,4 @@ export default async function handler(request, response) {
         return response.status(500).json({ message: 'Internal Server Error', details: errorMessage });
     }
 }
+
