@@ -44,6 +44,9 @@ export default {
         promoLinkURL: "https://www.sixstarcruises.co.uk/",
         promoImageURL: "sixstars.png"
     },
+    postcardPromo: {
+        imageURL: ""
+    },
     limits: {
         postcardLimit: 5,
         limitDays: 30

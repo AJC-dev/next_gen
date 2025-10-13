@@ -203,33 +203,35 @@ function drawCoverImage(ctx, img, canvasWidth, canvasHeight, offsetX, offsetY, z
 }
 
 function drawCleanFrontOnContext(ctx, width, height, bleedPx = 0) {
-    const sourceCanvas = dom.previewCanvas.el;
-    
-    // Determine scale factor based on width, as it's the constant dimension in landscape.
-    // In the rotated case, the new 'width' corresponds to the source's 'height'.
-    const scaleFactor = width / (appState.isPortrait && width > height ? sourceCanvas.height : sourceCanvas.width);
-
-    if (appState.uploadedImage) {
+     if (appState.uploadedImage) {
         ctx.save();
         ctx.translate(bleedPx, bleedPx);
-        const scaledOffsetX = appState.imageOffsetX * scaleFactor;
-        const scaledOffsetY = appState.imageOffsetY * scaleFactor;
+        // When drawing the rotated preview, scaleFactor is calculated differently.
+        const effectiveScale = (appState.isPortrait && width > height) ? 
+            height / dom.previewCanvas.el.height : 
+            width / dom.previewCanvas.el.width;
+
+        const scaledOffsetX = appState.imageOffsetX * effectiveScale;
+        const scaledOffsetY = appState.imageOffsetY * effectiveScale;
         drawCoverImage(ctx, appState.uploadedImage, width - (bleedPx * 2), height - (bleedPx * 2), scaledOffsetX, scaledOffsetY, appState.imageZoom);
         ctx.restore();
     }
     if (appState.frontText.text) {
         const { text, font, size, color, x, y, rotation, width: textWidth } = appState.frontText;
+        const effectiveScale = (appState.isPortrait && width > height) ? 
+            height / dom.previewCanvas.el.height : 
+            width / dom.previewCanvas.el.width;
         ctx.save();
         ctx.fillStyle = color;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         
-        const textX = (x * scaleFactor) + bleedPx;
-        const textY = (y * scaleFactor) + bleedPx;
+        const textX = (x * effectiveScale) + bleedPx;
+        const textY = (y * effectiveScale) + bleedPx;
 
         ctx.translate(textX, textY);
         ctx.rotate(rotation * Math.PI / 180);
-        drawWrappedText(ctx, text, 0, 0, textWidth * scaleFactor, size * scaleFactor * 1.2, `${size * scaleFactor}px ${font}`);
+        drawWrappedText(ctx, text, 0, 0, textWidth * effectiveScale, size * effectiveScale * 1.2, `${size * effectiveScale}px ${font}`);
         ctx.restore();
     }
 }
@@ -354,7 +356,7 @@ function getHandlePositions(metrics) {
     return {
         size: {
             x: x + (resizeHandleRelX * cos - resizeHandleRelY * sin),
-            y: y + (resizeHandleRelX * sin + resizeHandleRelY * cos)
+            y: y + (resizeHandleRelY * sin + resizeHandleRelY * cos)
         },
         rotate: {
             x: x + (rotateHandleRelX * cos - rotateHandleRelY * sin),
@@ -584,7 +586,7 @@ async function generatePostcardImages({ forEmail = false } = {}) {
             frontCtx.rotate(90 * Math.PI / 180);
             frontCtx.translate(-finalHeightPx / 2, -finalWidthPx / 2);
             
-            drawCleanFrontOnContext(frontCtx, finalHeightPx, finalWidthPx, bleedPxForPrint);
+            drawCleanFrontOnContext(frontCtx, finalHeightPx, finalWidthPx, 0);
 
             frontCtx.restore();
         } else {
@@ -833,6 +835,7 @@ async function handleFinalSend() {
             frontImageUrlForEmail: frontEmailBlobData.url,
             backImageUrl: backPrintBlobData.url, 
             backImageUrlWithAddress: backEmailBlobData.url,
+            postcardPromoImageUrl: postcardConfig.postcardPromo.imageURL,
             recaptchaToken: recaptchaToken,
             emailConfig: {
                 senderName: postcardConfig.email.senderName,
