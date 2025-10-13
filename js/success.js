@@ -1,3 +1,5 @@
+// This new version will hide the loading overlay once it has populated the content.
+
 import fallbackConfig from './config.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -21,6 +23,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else {
         console.error('Success page configuration is missing.');
     }
+
+    // Hide the loading overlay and show the content
+    document.getElementById('loading-overlay').style.display = 'none';
+    document.getElementById('main-content').style.display = 'block';
 });
 
 function applySuccessPageConfig(successConfig) {
@@ -43,6 +49,6 @@ function applySuccessPageConfig(successConfig) {
 
     const promoImage = document.getElementById('success-promo-image');
     promoImage.src = successConfig.promoImageURL;
-    promoImage.alt = `${successConfig.promoLinkText} Logo`; // Add alt text for accessibility
+    promoImage.alt = `${successConfig.promoLinkText || 'Promo'} Image`;
 }
 
