@@ -6,7 +6,7 @@ import sgMail from '@sendgrid/mail';
 async function sendToPrintAPI(postcardData) {
     console.log("Attempting to send to Zap-Post API");
 
-    const { sender, recipient, frontImageUrl, backImageUrl } = postcardData;
+    const { sender, recipient, frontImageUrl, backImageUrl, postcardPromoImageUrl } = postcardData;
     const { ZAPPOST_USERNAME, ZAPPOST_PASSWORD, ZAPPOST_CAMPAIGN_ID } = process.env;
 
     if (!ZAPPOST_USERNAME || !ZAPPOST_PASSWORD || !ZAPPOST_CAMPAIGN_ID) {
@@ -15,7 +15,7 @@ async function sendToPrintAPI(postcardData) {
 
     const customerId = `${sender.email}${recipient.postcode.replace(/\s/g, '')}`;
 
-    // Structure the payload according to the working Zap-Post API call
+    // Structure the payload according to Zap-Post's API documentation
     const apiPayload = {
         campaignId: ZAPPOST_CAMPAIGN_ID,
         scheduledSendDateId: "",
@@ -38,8 +38,9 @@ async function sendToPrintAPI(postcardData) {
                 language: "en",
                 customdata: {
                     "front": frontImageUrl,
-                    "message": backImageUrl, // This is the back image WITHOUT address
-                    "sender": sender.name
+                    "message": backImageUrl,
+                    "sender": sender.name,
+                    "promo": postcardPromoImageUrl
                 }
             }
         ]
