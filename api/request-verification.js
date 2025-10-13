@@ -62,7 +62,10 @@ export default async function handler(request, response) {
 
         const msg = {
             to: sender.email,
-            from: process.env.SENDGRID_FROM_EMAIL,
+            from: { 
+                email: process.env.SENDGRID_FROM_EMAIL,
+                name: emailConfig.senderName 
+            },
             subject: subject,
             html: `
                 <div style="font-family: sans-serif; text-align: center; padding: 20px;">
