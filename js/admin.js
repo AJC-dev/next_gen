@@ -161,6 +161,26 @@ function populateForm(config) {
 async function handleFormSubmit(event) {
     event.preventDefault();
     const saveButton = document.getElementById('save-changes-btn');
+    
+    // Client-side validation
+    const form = document.getElementById('config-form');
+    const inputs = form.querySelectorAll('input, textarea');
+    let allValid = true;
+    for (const input of inputs) {
+        if (input.type !== 'file' && !input.value.trim()) {
+            allValid = false;
+            input.classList.add('border-red-500');
+        } else {
+             input.classList.remove('border-red-500');
+        }
+    }
+
+    if (!allValid) {
+        alert('Please fill out all mandatory fields.');
+        return;
+    }
+
+
     saveButton.textContent = 'Saving...';
     saveButton.disabled = true;
 
