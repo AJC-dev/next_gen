@@ -206,7 +206,6 @@ function drawCleanFrontOnContext(ctx, width, height, bleedPx = 0) {
      if (appState.uploadedImage) {
         ctx.save();
         ctx.translate(bleedPx, bleedPx);
-        // When drawing the rotated preview, scaleFactor is calculated differently.
         const effectiveScale = (appState.isPortrait && width > height) ? 
             height / dom.previewCanvas.el.height : 
             width / dom.previewCanvas.el.width;
@@ -784,11 +783,33 @@ async function handleFinalSend() {
     dom.sender.errorMessage.classList.add('hidden');
     try {
         const { frontCanvas: frontCanvasForPrint, backCanvas: backCanvasForPrint } = await generatePostcardImages({ forEmail: false });
-        const { frontCanvas: frontCanvasForEmail, backCanvas: backCanvasForEmail } = await generatePostcardImages({ forEmail: true });
+        
+        // Use the same hi-res, correctly oriented canvas for the preview email
+        const { frontCanvas: highResEmailFrontCanvas, backCanvas: highResBackCanvasForEmail } = await generatePostcardImages({ forEmail: true });
+
+        // --- START: Create LOW-RESOLUTION versions for email ---
+        const createLowResCanvas = (sourceCanvas, maxWidth = 800) => {
+            const scale = maxWidth / sourceCanvas.width;
+            const newWidth = sourceCanvas.width * scale;
+            const newHeight = sourceCanvas.height * scale;
+            const lowResCanvas = document.createElement('canvas');
+            lowResCanvas.width = newWidth;
+            lowResCanvas.height = newHeight;
+            const ctx = lowResCanvas.getContext('2d');
+            ctx.drawImage(sourceCanvas, 0, 0, newWidth, newHeight);
+            return lowResCanvas;
+        };
+
+        const lowResFrontCanvasForEmail = createLowResCanvas(highResEmailFrontCanvas);
+        const lowResBackCanvasForEmail = createLowResCanvas(highResBackCanvasForEmail);
+        // --- END: Create LOW-RESOLUTION versions for email ---
+
+
         const frontBlobForPrint = await new Promise(resolve => frontCanvasForPrint.toBlob(resolve, 'image/jpeg', 0.9));
-        const frontBlobForEmail = await new Promise(resolve => frontCanvasForEmail.toBlob(resolve, 'image/jpeg', 0.8));
+        const frontBlobForEmail = await new Promise(resolve => lowResFrontCanvasForEmail.toBlob(resolve, 'image/jpeg', 0.8));
         const backBlobForPrint = await new Promise(resolve => backCanvasForPrint.toBlob(resolve, 'image/jpeg', 0.9));
-        const backBlobForEmail = await new Promise(resolve => backCanvasForEmail.toBlob(resolve, 'image/jpeg', 0.8));
+        const backBlobForEmail = await new Promise(resolve => lowResBackCanvasForEmail.toBlob(resolve, 'image/jpeg', 0.8));
+        
         const sanitizedEmail = senderEmail.replace(/[^a-z0-9]/gi, '-');
         const sanitizedName = senderName.replace(/[^a-z0-9]/gi, '-');
         const sanitizedPostcode = dom.addressInputs.postcode.value.replace(/[^a-z0-9]/gi, '-');
@@ -828,6 +849,7 @@ async function handleFinalSend() {
             }
         };
         localStorage.setItem('lastPostcardDesign', JSON.stringify(resendData));
+        
         const postcardData = {
             sender: { name: senderName, email: senderEmail },
             recipient: recipient,
@@ -835,7 +857,6 @@ async function handleFinalSend() {
             frontImageUrlForEmail: frontEmailBlobData.url,
             backImageUrl: backPrintBlobData.url, 
             backImageUrlWithAddress: backEmailBlobData.url,
-            postcardPromoImageUrl: postcardConfig.postcardPromo.imageURL,
             recaptchaToken: recaptchaToken,
             emailConfig: {
                 senderName: postcardConfig.email.senderName,
@@ -846,6 +867,13 @@ async function handleFinalSend() {
             },
              confirmationEmailConfig: postcardConfig.confirmationEmail
         };
+        
+        // Remove postcardPromoImageUrl from the tokenized data
+        if (postcardConfig.postcardPromo && postcardConfig.postcardPromo.imageURL) {
+            postcardData.postcardPromoImageUrl = postcardConfig.postcardPromo.imageURL;
+        }
+
+
         const verificationResponse = await fetch('/api/request-verification', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1073,7 +1101,7 @@ function initializePostcardCreator() {
             canvas.style.cursor = 'grabbing';
             const dx = mouseX - startState.mouseX;
             const dy = mouseY - startState.mouseY;
-            appState.imageOffsetX = startState.imageOffsetX + dx;
+            appState.imageOffsetX = appState.imageOffsetX + dx;
             appState.imageOffsetY = startState.imageOffsetY + dy;
         }
         drawPreviewCanvas();
