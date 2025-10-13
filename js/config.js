@@ -20,13 +20,16 @@ export default {
     },
     email: {
         senderName: "Six Star Cruises",
-        subject: "Your Postcard Proof",
-        body: "Here is the final proof of your postcard. Please click the link to confirm and send."
+        subject: "Your Postcard Proof for {{recipientName}}",
+        body: "Hi {{senderName}}, here is the final proof of your postcard. Please click the link to confirm and send."
     },
     confirmationEmail: {
         senderName: "Six Star Cruises Team",
-        subject: "Your Postcard Has Been Sent!",
-        body: "Thank you for using our service. Your postcard is on its way."
+        subject: "Your Postcard to {{recipientName}} has been sent!",
+        body: "Hi {{senderName}}, thank you for using our service. Your postcard is on its way.",
+        promoText: "Savings Event: Book next year with savings of up to 40% and Free Business Class Flights",
+        promoLinkURL: "https://www.sixstarcruises.co.uk/",
+        promoImageURL: "sixstars.png"
     },
     successPage: {
         pageTitle: "Postcard Sent!",
