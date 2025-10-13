@@ -3,16 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Postcard Sent!</title>
+    <title>Loading...</title>
     <link id="success-favicon" rel="icon" type="image/x-icon" href="">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/styles.css">
+     <script>
+        // This inline script fetches the config immediately to set the loading GIF and favicon.
+        (async () => {
+            try {
+                const response = await fetch('/api/get-config');
+                if (response.ok) {
+                    const config = await response.json();
+                    document.getElementById('loading-image').src = config.content.loadingImageURL;
+                    document.getElementById('success-favicon').href = config.successPage.faviconURL;
+                    document.title = config.successPage.pageTitle;
+                } else {
+                     // Fallback to a default if the API fails
+                    document.getElementById('loading-image').src = 'https://i.gifer.com/ZZ5H.gif';
+                }
+            } catch (error) {
+                console.error("Initial config fetch failed, using default loader.");
+                document.getElementById('loading-image').src = 'https://i.gifer.com/ZZ5H.gif';
+            }
+        })();
+    </script>
 </head>
 <body class="bg-slate-50 text-gray-800 flex items-center justify-center min-h-screen p-4">
-    <div class="w-full max-w-md mx-auto bg-white p-8 rounded-2xl shadow-xl text-center">
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-slate-50 flex items-center justify-center z-50">
+        <img id="loading-image" src="" alt="Loading..." class="h-16 w-16">
+    </div>
+    
+    <!-- Main Content (hidden by default) -->
+    <div id="main-content" class="w-full max-w-md mx-auto bg-white p-8 rounded-2xl shadow-xl text-center hidden">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-green-500 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
@@ -23,7 +49,7 @@
         
         <p id="success-promo-text" class="text-gray-600"></p>
         <a id="success-promo-link" href="" target="_blank">
-            <img id="success-promo-image" src="" alt="Promo Logo" class="mx-auto mt-2">
+            <img id="success-promo-image" src="" alt="Promo Image" class="mx-auto mt-2">
         </a>
     </div>
 

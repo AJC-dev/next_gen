@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SixStarCruises- Send Free Postcards</title>
-    <link id="favicon" rel="icon" type="image/x-icon" href="ssc_favicon.ico" />
+    <title>Loading...</title>
+    <link id="favicon" rel="icon" type="image/x-icon" href="" />
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/masonry-layout@4/dist/masonry.pkgd.min.js" async></script>
@@ -12,12 +12,32 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Caveat:wght@400;700&family=Dancing+Script:wght@400;700&family=Indie+Flower&family=Pacifico&family=Homemade+Apple&family=Gochi+Hand&family=Dawning+of+a+New+Day&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/styles.css">
+    <script>
+        // This inline script fetches the config immediately to set the loading GIF and favicon.
+        (async () => {
+            try {
+                const response = await fetch('/api/get-config');
+                if (response.ok) {
+                    const config = await response.json();
+                    document.getElementById('loading-image').src = config.content.loadingImageURL;
+                    document.getElementById('favicon').href = config.content.faviconURL;
+                    document.title = config.content.pageTitle;
+                } else {
+                     // Fallback to a default if the API fails, using a simple local default
+                    document.getElementById('loading-image').src = 'https://i.gifer.com/ZZ5H.gif';
+                }
+            } catch (error) {
+                console.error("Initial config fetch failed, using default loader.");
+                document.getElementById('loading-image').src = 'https://i.gifer.com/ZZ5H.gif';
+            }
+        })();
+    </script>
 </head>
 <body class="bg-slate-50 text-gray-800 flex flex-col items-center min-h-screen p-4 md:p-8">
 
     <!-- Loading Overlay -->
     <div id="loading-overlay" class="fixed inset-0 bg-slate-50 flex items-center justify-center z-50">
-        <img id="loading-image" src="https://i.gifer.com/ZZ5H.gif" alt="Loading..." class="h-16 w-16">
+        <img id="loading-image" src="" alt="Loading..." class="h-16 w-16">
     </div>
 
     <div id="error-banner" class="hidden w-full max-w-2xl mx-auto bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-4" role="alert">
