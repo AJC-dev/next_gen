@@ -3,15 +3,18 @@ import jwt from 'jsonwebtoken';
 import sgMail from '@sendgrid/mail';
 
 // Makes the actual API call to the Zap-Post print service
-async function sendToPrintAPI(postcardData) {
+async function sendToPrintAPI(postcardData, config) {
     console.log("Attempting to send to Zap-Post API");
 
-    const { sender, recipient, frontImageUrl, backImageUrl, postcardPromoImageUrl } = postcardData;
+    const { sender, recipient, frontImageUrl, backImageUrl } = postcardData;
     const { ZAPPOST_USERNAME, ZAPPOST_PASSWORD, ZAPPOST_CAMPAIGN_ID } = process.env;
 
     if (!ZAPPOST_USERNAME || !ZAPPOST_PASSWORD || !ZAPPOST_CAMPAIGN_ID) {
         throw new Error("Missing required Zap-Post environment variables.");
     }
+    
+    // Get the postcard promo image URL from the live config
+    const postcardPromoImageUrl = config.postcardPromo.imageURL;
 
     const customerId = `${sender.email}${recipient.postcode.replace(/\s/g, '')}`;
 
@@ -86,7 +89,14 @@ export default async function handler(request, response) {
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         const { postcardData } = decoded;
-        const { sender, recipient, confirmationEmailConfig } = postcardData;
+        const { sender, recipient } = postcardData;
+        
+        // Fetch the live configuration from the database
+        const config = await kv.get('postcard-config');
+        if (!config) {
+            throw new Error("Live configuration not found in database.");
+        }
+        const { confirmationEmail: confirmationEmailConfig } = config;
         
         const userKey = `postcards:${sender.email}`;
         const now = Date.now();
@@ -102,8 +112,8 @@ export default async function handler(request, response) {
             backImage: postcardData.backImageUrl
         });
 
-        // Make the final call to the print API
-        await sendToPrintAPI(postcardData);
+        // Make the final call to the print API, passing in the full live config
+        await sendToPrintAPI(postcardData, config);
 
         let subject = confirmationEmailConfig.subject.replace(/{{senderName}}/g, sender.name).replace(/{{recipientName}}/g, recipient.name);
         let body = confirmationEmailConfig.body.replace(/{{senderName}}/g, sender.name).replace(/{{recipientName}}/g, recipient.name);

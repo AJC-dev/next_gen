@@ -60,6 +60,8 @@ export default async function handler(request, response) {
         let subject = emailConfig.subject.replace(/{{senderName}}/g, sender.name).replace(/{{recipientName}}/g, recipient.name);
         let body = emailConfig.body.replace(/{{senderName}}/g, sender.name).replace(/{{recipientName}}/g, recipient.name);
 
+        const buttonHtml = `<a href="${verificationUrl}" style="background-color: ${emailConfig.buttonColor}; color: ${emailConfig.buttonTextColor}; padding: 15px 25px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 20px 0;">Click Here to Verify & Send</a>`;
+
         const msg = {
             to: sender.email,
             from: { 
@@ -71,13 +73,15 @@ export default async function handler(request, response) {
                 <div style="font-family: sans-serif; text-align: center; padding: 20px;">
                     <h2>${emailConfig.senderName}</h2>
                     <p>${body}</p>
-                    <a href="${verificationUrl}" style="background-color: ${emailConfig.buttonColor}; color: ${emailConfig.buttonTextColor}; padding: 15px 25px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 20px 0;">Click Here to Verify & Send</a>
+                    ${buttonHtml}
                     <hr style="margin: 20px 0;"/>
                     <p style="font-weight: bold;">Your Postcard Preview:</p>
                     <p>Front:</p>
                     <img src="${postcardData.frontImageUrlForEmail}" alt="Postcard Front" style="max-width: 100%; width: 400px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
                     <p style="margin-top: 20px;">Back:</p>
                     <img src="${postcardData.backImageUrlWithAddress}" alt="Postcard Back" style="max-width: 100%; width: 400px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
+                    <hr style="margin: 20px 0;"/>
+                    ${buttonHtml}
                 </div>
             `,
         };
