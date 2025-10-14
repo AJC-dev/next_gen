@@ -206,6 +206,7 @@ function drawCleanFrontOnContext(ctx, width, height, bleedPx = 0) {
      if (appState.uploadedImage) {
         ctx.save();
         ctx.translate(bleedPx, bleedPx);
+        // When drawing the rotated preview, scaleFactor is calculated differently.
         const effectiveScale = (appState.isPortrait && width > height) ? 
             height / dom.previewCanvas.el.height : 
             width / dom.previewCanvas.el.width;
@@ -856,7 +857,15 @@ async function handleFinalSend() {
             frontImageUrlForEmail: frontEmailBlobData.url,
             backImageUrl: backPrintBlobData.url, 
             backImageUrlWithAddress: backEmailBlobData.url,
-            recaptchaToken: recaptchaToken
+            recaptchaToken: recaptchaToken,
+            emailConfig: {
+                senderName: postcardConfig.email.senderName,
+                subject: postcardConfig.email.subject,
+                body: postcardConfig.email.body,
+                buttonColor: postcardConfig.styles.sendPostcardButtonColor,
+                buttonTextColor: postcardConfig.styles.sendPostcardButtonTextColor,
+            },
+             confirmationEmailConfig: postcardConfig.confirmationEmail
         };
         
         const verificationResponse = await fetch('/api/request-verification', {
@@ -1159,4 +1168,3 @@ function initializePostcardCreator() {
     toggleAccordion(document.getElementById('accordion-header-5'), true);
     toggleAccordion(document.getElementById('accordion-header-1'), true);
 }
-
