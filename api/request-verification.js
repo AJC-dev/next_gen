@@ -1,12 +1,9 @@
-import { Redis } from '@upstash/redis';
+import { Redis } from '@upstash/redis/vercel';
 import jwt from 'jsonwebtoken';
 import sgMail from '@sendgrid/mail';
 
-// Initialize Upstash Redis client and SendGrid
-const redis = new Redis({
-  url: process.env.upstash_pc_REDIS_URL,
-  token: process.env.upstash_pc_KV_REST_API_TOKEN,
-});
+// Initialize Upstash Redis client using the zero-config method and SendGrid
+const redis = Redis.fromEnv();
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 // Helper to parse the request body
