@@ -108,7 +108,6 @@ async function loadConfigAndInitialize() {
     } catch (error) {
         console.error("Could not fetch from DB, using local defaults.", error);
         postcardConfig = fallbackConfig;
-        // Since API keys are only on the server, we need a way to handle this failure
         postcardConfig.apiKeys = { recaptchaSiteKey: '', pixabayApiKey: '' }; 
         showGlobalError("Could not load application configuration. Using offline defaults.");
     } finally {
@@ -121,6 +120,11 @@ async function loadConfigAndInitialize() {
 
 
 // --- CORE LOGIC ---
+
+function showGlobalError(message) {
+    dom.errorBannerMessage.textContent = message;
+    dom.errorBanner.classList.remove('hidden');
+}
 
 function applyConfiguration() {
     document.title = postcardConfig.content.pageTitle;
@@ -140,6 +144,7 @@ function applyConfiguration() {
     dom.sendPostcardBtn.style.color = postcardConfig.styles.sendPostcardButtonTextColor;
 }
 
+// ... rest of the file is the same as the last version of app.js ...
 async function checkForProfanityAPI(text, warningElement) {
     if (!text.trim()) {
         warningElement.classList.add('hidden');
@@ -842,7 +847,6 @@ async function handleFinalSend() {
         };
         localStorage.setItem('lastPostcardDesign', JSON.stringify(resendData));
         
-        // This object is sent to the server and encoded in the JWT
         const postcardData = {
             sender: { name: senderName, email: senderEmail },
             recipient: recipient,
