@@ -99,30 +99,24 @@ function populateDomReferences() {
 }
 
 async function loadConfigAndInitialize() {
-    // 1. Load the local fallback config first to ensure a stable state.
-    postcardConfig = fallbackConfig;
-    applyConfiguration(); // Apply fallback config to show something immediately
-
-    // 2. Then, try to fetch the live config from the database.
     try {
         const response = await fetch('/api/get-config');
-        if (response.ok) {
-            const dbConfig = await response.json();
-            postcardConfig = dbConfig;
-            // 3. If successful, re-apply the config with the live data.
-            applyConfiguration();
-        } else {
-             console.warn('No configuration found in database. Using local defaults.');
+        if (!response.ok) {
+             throw new Error('Could not fetch config from API');
         }
+        postcardConfig = await response.json();
     } catch (error) {
         console.error("Could not fetch from DB, using local defaults.", error);
+        postcardConfig = fallbackConfig;
+        // Since API keys are only on the server, we need a way to handle this failure
+        postcardConfig.apiKeys = { recaptchaSiteKey: '', pixabayApiKey: '' }; 
+        showGlobalError("Could not load application configuration. Using offline defaults.");
+    } finally {
+        applyConfiguration();
+        initializePostcardCreator();
+        dom.loadingOverlay.style.display = 'none';
+        dom.mainContent.style.display = 'block';
     }
-    
-    // 4. Initialize the rest of the app's functionality and hide loading screen
-    initializePostcardCreator();
-    
-    dom.loadingOverlay.style.display = 'none';
-    dom.mainContent.style.display = 'block';
 }
 
 
@@ -679,14 +673,14 @@ async function updateFinalPreviews() {
 async function handleImageSearch() {
     const query = dom.search.input.value;
     if (!query) return;
-    if (!appState.apiKeys.pixabayApiKey) {
+    if (!postcardConfig.apiKeys.pixabayApiKey) {
         console.error("Pixabay API Key not available.");
         return;
     }
     dom.search.loader.style.display = 'flex';
     dom.search.resultsContainer.innerHTML = '';
     try {
-        const response = await fetch(`https://pixabay.com/api/?key=${appState.apiKeys.pixabayApiKey}&q=${encodeURIComponent(query)}&image_type=photo&per_page=21`);
+        const response = await fetch(`https://pixabay.com/api/?key=${postcardConfig.apiKeys.pixabayApiKey}&q=${encodeURIComponent(query)}&image_type=photo&per_page=21`);
         if (!response.ok) {
             throw new Error(`Pixabay API responded with status: ${response.status}`);
         }
@@ -754,7 +748,7 @@ async function handleSendPostcard() {
     dom.sender.nameInput.value = localStorage.getItem('senderName') || '';
     dom.sender.emailInput.value = localStorage.getItem('senderEmail') || '';
     if (dom.sender.recaptchaContainer.innerHTML.trim() === '') {
-         grecaptcha.render(dom.sender.recaptchaContainer, { 'sitekey' : appState.apiKeys.recaptchaSiteKey });
+         grecaptcha.render(dom.sender.recaptchaContainer, { 'sitekey' : postcardConfig.apiKeys.recaptchaSiteKey });
     } else {
         grecaptcha.reset();
     }
@@ -856,20 +850,7 @@ async function handleFinalSend() {
             frontImageUrlForEmail: frontEmailBlobData.url,
             backImageUrl: backPrintBlobData.url, 
             backImageUrlWithAddress: backEmailBlobData.url,
-            recaptchaToken: recaptchaToken,
-            emailConfig: {
-                senderName: postcardConfig.email.senderName,
-                subject: postcardConfig.email.subject,
-                body: postcardConfig.email.body,
-                buttonColor: postcardConfig.styles.sendPostcardButtonColor,
-                buttonTextColor: postcardConfig.styles.sendPostcardButtonTextColor,
-            },
-             // Omit the large promo image URL from the token
-             confirmationEmailConfig: {
-                senderName: postcardConfig.confirmationEmail.senderName,
-                subject: postcardConfig.confirmationEmail.subject,
-                body: postcardConfig.confirmationEmail.body,
-             }
+            recaptchaToken: recaptchaToken
         };
         
         const verificationResponse = await fetch('/api/request-verification', {
@@ -905,26 +886,16 @@ function debounce(func, delay) {
 const debouncedUpdateAllPreviews = debounce(updateFinalPreviews, 300);
 const debouncedProfanityCheck = debounce(checkForProfanityAPI, 500);
 
-async function fetchApiKeys() {
-    try {
-        const response = await fetch('/api/config');
-        if (!response.ok) {
-            throw new Error(`Server responded with ${response.status}`);
-        }
-        const serverConfig = await response.json();
-        appState.apiKeys.recaptchaSiteKey = serverConfig.recaptchaSiteKey;
-        appState.apiKeys.pixabayApiKey = serverConfig.pixabayApiKey;
-    } catch (error) {
-        console.error(`Could not fetch server configuration: ${error.message}. Ensure environment variables are set correctly on your Vercel deployment.`);
-        dom.errorBannerMessage.textContent = "Application is not configured correctly. Please contact the site owner.";
-        dom.errorBanner.classList.remove('hidden');
-        dom.findImageButton.disabled = true;
-        dom.sendPostcardBtn.disabled = true;
-    }
-}
 
 function initializePostcardCreator() {
-    fetchApiKeys();
+    
+    if (!postcardConfig.apiKeys || !postcardConfig.apiKeys.recaptchaSiteKey) {
+        showGlobalError("Application is not configured correctly. API keys are missing.");
+        dom.findImageButton.disabled = true;
+        dom.sendPostcardBtn.disabled = true;
+        return;
+    }
+
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('sendAgain') === 'true') {
         const lastDesign = JSON.parse(localStorage.getItem('lastPostcardDesign'));
