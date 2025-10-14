@@ -1,12 +1,7 @@
-import { createClient } from '@vercel/kv';
+import { kv } from '@vercel/kv'; // Use the zero-config import
 import jwt from 'jsonwebtoken';
 import sgMail from '@sendgrid/mail';
 
-// Initialize KV client and SendGrid
-const kv = createClient({
-  url: process.env.upstash_pc_KV_REST_API_URL,
-  token: process.env.upstash_pc_KV_REST_API_TOKEN,
-});
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 // Helper to parse the request body
@@ -34,7 +29,6 @@ export default async function handler(request, response) {
         const { postcardData } = await parseJSONBody(request);
         const { sender, recipient, emailConfig } = postcardData;
         
-        // Fetch the live configuration, which includes the limits
         const config = await kv.get('postcard-config');
         if (!config || !config.limits) {
              throw new Error("Usage limits are not configured in the database.");
@@ -56,7 +50,6 @@ export default async function handler(request, response) {
         const host = request.headers['x-forwarded-host'] || request.headers.host;
         const verificationUrl = new URL(`/api/verify-and-send?token=${token}`, `${proto}://${host}`).toString();
 
-        // Replace variables in subject and body
         let subject = emailConfig.subject.replace(/{{senderName}}/g, sender.name).replace(/{{recipientName}}/g, recipient.name);
         let body = emailConfig.body.replace(/{{senderName}}/g, sender.name).replace(/{{recipientName}}/g, recipient.name);
 
@@ -96,4 +89,3 @@ export default async function handler(request, response) {
         return response.status(500).json({ message: 'Internal Server Error', details: errorMessage });
     }
 }
-
