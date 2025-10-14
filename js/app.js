@@ -206,7 +206,6 @@ function drawCleanFrontOnContext(ctx, width, height, bleedPx = 0) {
      if (appState.uploadedImage) {
         ctx.save();
         ctx.translate(bleedPx, bleedPx);
-        // When drawing the rotated preview, scaleFactor is calculated differently.
         const effectiveScale = (appState.isPortrait && width > height) ? 
             height / dom.previewCanvas.el.height : 
             width / dom.previewCanvas.el.width;
@@ -802,6 +801,7 @@ async function handleFinalSend() {
         const lowResFrontCanvasForEmail = createLowResCanvas(highResEmailFrontCanvas);
         const lowResBackCanvasForEmail = createLowResCanvas(highResEmailBackCanvas);
         // --- END: Create LOW-RESOLUTION versions for email ---
+
 
         const frontBlobForPrint = await new Promise(resolve => frontCanvasForPrint.toBlob(resolve, 'image/jpeg', 0.9));
         const frontBlobForEmail = await new Promise(resolve => lowResFrontCanvasForEmail.toBlob(resolve, 'image/jpeg', 0.8));
