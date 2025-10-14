@@ -206,7 +206,6 @@ function drawCleanFrontOnContext(ctx, width, height, bleedPx = 0) {
      if (appState.uploadedImage) {
         ctx.save();
         ctx.translate(bleedPx, bleedPx);
-        // When drawing the rotated preview, scaleFactor is calculated differently.
         const effectiveScale = (appState.isPortrait && width > height) ? 
             height / dom.previewCanvas.el.height : 
             width / dom.previewCanvas.el.width;
@@ -783,7 +782,7 @@ async function handleFinalSend() {
     dom.sender.sendBtn.disabled = true;
     dom.sender.errorMessage.classList.add('hidden');
     try {
-        const { frontCanvas: frontCanvasForPrint, backCanvas: backCanvasForPrint } = await generatePostcardImages({ forEmail: false });
+        const { frontCanvas: frontCanvasForPrint, backCanvas: backCanvasForPrint } = await generatePostcardImages({ forEmail: false, includeAddressOnImage: false });
         
         // --- START: Create LOW-RESOLUTION versions for email ---
         const createLowResCanvas = (sourceCanvas, maxWidth = 400) => {
@@ -798,7 +797,7 @@ async function handleFinalSend() {
             return lowResCanvas;
         };
 
-        const { frontCanvas: highResEmailFrontCanvas, backCanvas: highResEmailBackCanvas } = await generatePostcardImages({ forEmail: true });
+        const { frontCanvas: highResEmailFrontCanvas, backCanvas: highResEmailBackCanvas } = await generatePostcardImages({ forEmail: true, includeAddressOnImage: true });
         const lowResFrontCanvasForEmail = createLowResCanvas(highResEmailFrontCanvas);
         const lowResBackCanvasForEmail = createLowResCanvas(highResEmailBackCanvas);
         // --- END: Create LOW-RESOLUTION versions for email ---
@@ -865,7 +864,12 @@ async function handleFinalSend() {
                 buttonColor: postcardConfig.styles.sendPostcardButtonColor,
                 buttonTextColor: postcardConfig.styles.sendPostcardButtonTextColor,
             },
-             confirmationEmailConfig: postcardConfig.confirmationEmail
+             // Omit the large promo image URL from the token
+             confirmationEmailConfig: {
+                senderName: postcardConfig.confirmationEmail.senderName,
+                subject: postcardConfig.confirmationEmail.subject,
+                body: postcardConfig.confirmationEmail.body,
+             }
         };
         
         const verificationResponse = await fetch('/api/request-verification', {
@@ -1168,3 +1172,4 @@ function initializePostcardCreator() {
     toggleAccordion(document.getElementById('accordion-header-5'), true);
     toggleAccordion(document.getElementById('accordion-header-1'), true);
 }
+
