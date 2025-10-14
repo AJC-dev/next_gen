@@ -91,7 +91,7 @@ export default async function handler(request, response) {
         const { postcardData } = decoded;
         const { sender, recipient } = postcardData;
         
-        // Fetch the live configuration from the database
+        // Fetch the live configuration from the database to get promo content
         const config = await kv.get('postcard-config');
         if (!config) {
             throw new Error("Live configuration not found in database.");
