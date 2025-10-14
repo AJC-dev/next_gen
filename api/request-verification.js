@@ -31,7 +31,6 @@ export default async function handler(request, response) {
         const { postcardData } = await parseJSONBody(request);
         const { sender, recipient, emailConfig } = postcardData;
         
-        // Fetch the live configuration, which includes the limits
         const config = await redis.get('postcard-config');
         if (!config || !config.limits) {
              throw new Error("Usage limits are not configured in the database.");
@@ -53,7 +52,6 @@ export default async function handler(request, response) {
         const host = request.headers['x-forwarded-host'] || request.headers.host;
         const verificationUrl = new URL(`/api/verify-and-send?token=${token}`, `${proto}://${host}`).toString();
 
-        // Replace variables in subject and body
         let subject = emailConfig.subject.replace(/{{senderName}}/g, sender.name).replace(/{{recipientName}}/g, recipient.name);
         let body = emailConfig.body.replace(/{{senderName}}/g, sender.name).replace(/{{recipientName}}/g, recipient.name);
 
