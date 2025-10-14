@@ -1,8 +1,8 @@
-import { createClient } from '@vercel/kv';
+import { Redis } from '@upstash/redis';
 
-// Initialize the KV client with the new Upstash environment variables
-const kv = createClient({
-  url: process.env.upstash_pc_KV_REST_API_URL,
+// Initialize the Upstash Redis client directly
+const redis = new Redis({
+  url: process.env.upstash_pc_REDIS_URL,
   token: process.env.upstash_pc_KV_REST_API_TOKEN,
 });
 
@@ -38,14 +38,15 @@ export default async function handler(request, response) {
     try {
         const newConfig = await parseJSONBody(request);
         
-        await kv.set('postcard-config', newConfig);
+        // Use the native Upstash client to set the data
+        await redis.set('postcard-config', newConfig);
 
-        console.log("Successfully saved new configuration to Upstash KV.");
+        console.log("Successfully saved new configuration to Upstash.");
 
         return response.status(200).json({ message: 'Configuration saved successfully.' });
 
     } catch (error) {
-        console.error('Error saving configuration to Upstash KV:', error);
+        console.error('Error saving configuration to Upstash:', error);
         const errorMessage = error instanceof Error ? error.message : String(error);
         return response.status(500).json({ message: 'Error saving configuration.', details: errorMessage });
     }
