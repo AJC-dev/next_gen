@@ -67,7 +67,6 @@ function setupEventListeners() {
     setupImageUploader('success-favicon-uploader', 'successFaviconURL', 'success-favicon-preview');
     setupImageUploader('promo-image-uploader', 'successPromoImageURL', 'promo-image-preview');
     setupImageUploader('confirmation-promo-image-uploader', 'confirmationPromoImageURL', 'confirmation-promo-image-preview');
-    setupImageUploader('postcard-promo-image-uploader', 'postcardPromoImageURL', 'postcard-promo-image-preview');
 
 
     document.getElementById('faviconURL').addEventListener('input', (e) => updatePreviewFromInput(e.target.value, 'favicon-preview'));
@@ -75,7 +74,6 @@ function setupEventListeners() {
     document.getElementById('successFaviconURL').addEventListener('input', (e) => updatePreviewFromInput(e.target.value, 'success-favicon-preview'));
     document.getElementById('successPromoImageURL').addEventListener('input', (e) => updatePreviewFromInput(e.target.value, 'promo-image-preview'));
     document.getElementById('confirmationPromoImageURL').addEventListener('input', (e) => updatePreviewFromInput(e.target.value, 'confirmation-promo-image-preview'));
-    document.getElementById('postcardPromoImageURL').addEventListener('input', (e) => updatePreviewFromInput(e.target.value, 'postcard-promo-image-preview'));
 
 
     document.querySelectorAll('.copy-btn').forEach(button => {
@@ -147,10 +145,6 @@ function populateForm(config) {
     document.getElementById('successPromoLinkURL').value = config.successPage.promoLinkURL;
     updatePreviewFromInput(config.successPage.promoImageURL, 'promo-image-preview');
     document.getElementById('successPromoImageURL').value = config.successPage.promoImageURL;
-
-    // Postcard Promotion
-    document.getElementById('postcardPromoImageURL').value = config.postcardPromo.imageURL;
-    updatePreviewFromInput(config.postcardPromo.imageURL, 'postcard-promo-image-preview');
     
     // Usage Limits
     document.getElementById('postcardLimit').value = config.limits.postcardLimit;
@@ -229,9 +223,6 @@ async function handleFormSubmit(event) {
             promoText: document.getElementById('successPromoText').value,
             promoLinkURL: document.getElementById('successPromoLinkURL').value,
             promoImageURL: document.getElementById('successPromoImageURL').value,
-        },
-        postcardPromo: {
-            imageURL: document.getElementById('postcardPromoImageURL').value
         },
         limits: {
             postcardLimit: parseInt(document.getElementById('postcardLimit').value, 10),
