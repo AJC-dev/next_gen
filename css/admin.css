@@ -1,45 +1,45 @@
-body {
-    font-family: 'Inter', sans-serif;
-}
-
 .accordion-content {
     max-height: 0;
     overflow: hidden;
-    transition: max-height 0.4s ease-in-out, padding 0.4s ease-in-out;
-    padding-top: 0;
-    padding-bottom: 0;
+    transition: max-height 0.3s ease-out;
+    background-color: #f7fafc; /* Light gray background for content */
 }
 
 .accordion-content.open {
-    max-height: 1000px; 
-    padding-top: 1.5rem;
-    padding-bottom: 1.5rem;
+    max-height: 1000px; /* A large enough value to show the content */
+    transition: max-height 0.5s ease-in;
 }
 
 .accordion-header.open .accordion-icon {
     transform: rotate(180deg);
 }
 
-/* Updated styles for input fields */
-input[type="text"],
-input[type="url"],
-textarea,
-select {
-    background-color: #f0f9ff; /* Light pastel blue */
-    border: 1px solid #d1d5db; /* Light gray outline visible by default */
-    transition: border-color 0.2s, box-shadow 0.2s;
+.admin-input {
+    background-color: #e0f2fe; /* pastel blue */
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    padding: 0.5rem 0.75rem;
 }
 
-input[type="text"]:focus,
-input[type="url"]:focus,
-textarea:focus,
-select:focus {
-    outline: none;
-    border-color: #3b82f6; /* Blue on focus */
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4);
+.admin-color-input {
+    height: 2.5rem;
+    background-color: #e0f2fe;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    padding: 0.25rem;
 }
 
-input[type="color"] {
-     border: 1px solid #d1d5db;
+.copy-btn {
+    background-color: #e5e7eb;
+    color: #374151;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    transition: background-color 0.2s;
+}
+
+.copy-btn:hover {
+    background-color: #d1d5db;
 }
 
