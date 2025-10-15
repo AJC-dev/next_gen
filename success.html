@@ -10,31 +10,11 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/styles.css">
-     <script>
-        // This inline script fetches the config immediately to set the loading GIF and favicon.
-        (async () => {
-            try {
-                const response = await fetch('/api/get-config');
-                if (response.ok) {
-                    const config = await response.json();
-                    document.getElementById('loading-image').src = config.content.loadingImageURL;
-                    document.getElementById('success-favicon').href = config.successPage.faviconURL;
-                    document.title = config.successPage.pageTitle;
-                } else {
-                     // Fallback to a default if the API fails
-                    document.getElementById('loading-image').src = 'https://i.gifer.com/ZZ5H.gif';
-                }
-            } catch (error) {
-                console.error("Initial config fetch failed, using default loader.");
-                document.getElementById('loading-image').src = 'https://i.gifer.com/ZZ5H.gif';
-            }
-        })();
-    </script>
 </head>
 <body class="bg-slate-50 text-gray-800 flex items-center justify-center min-h-screen p-4">
     <!-- Loading Overlay -->
     <div id="loading-overlay" class="fixed inset-0 bg-slate-50 flex items-center justify-center z-50">
-        <img id="loading-image" src="" alt="Loading..." class="h-16 w-16">
+        <img id="loading-image" src="https://i.gifer.com/ZZ5H.gif" alt="Loading..." class="h-16 w-16">
     </div>
     
     <!-- Main Content (hidden by default) -->
