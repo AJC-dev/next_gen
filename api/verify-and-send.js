@@ -1,17 +1,12 @@
-import { Redis } from '@upstash/redis';
+import { Redis } from '@upstash/redis/vercel';
 import jwt from 'jsonwebtoken';
 import sgMail from '@sendgrid/mail';
 
-// Initialize the Upstash Redis client directly
-const redis = new Redis({
-  url: process.env.upstash_pc_REDIS_URL,
-  token: process.env.upstash_pc_KV_REST_API_TOKEN,
-});
+// Initialize Upstash Redis client using the zero-config method
+const redis = Redis.fromEnv();
 
 // Makes the actual API call to the Zap-Post print service
 async function sendToPrintAPI(postcardData) {
-    console.log("Attempting to send to Zap-Post API");
-
     const { sender, recipient, frontImageUrl, backImageUrl } = postcardData;
     const { ZAPPOST_USERNAME, ZAPPOST_PASSWORD, ZAPPOST_CAMPAIGN_ID } = process.env;
 
@@ -21,7 +16,6 @@ async function sendToPrintAPI(postcardData) {
 
     const customerId = `${sender.email}${recipient.postcode.replace(/\s/g, '')}`;
 
-    // Structure the payload according to Zap-Post's API documentation
     const apiPayload = {
         campaignId: ZAPPOST_CAMPAIGN_ID,
         scheduledSendDateId: "",
@@ -63,7 +57,7 @@ async function sendToPrintAPI(postcardData) {
         body: JSON.stringify(apiPayload)
     });
 
-    if (!response.ok) { // Check for non-2xx status codes
+    if (!response.ok) {
         const errorBody = await response.text();
         throw new Error(`Failed to send postcard to print API. Status: ${response.status}. Body: ${errorBody}`);
     }
@@ -72,9 +66,7 @@ async function sendToPrintAPI(postcardData) {
     return response.json();
 }
 
-
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-
 
 export default async function handler(request, response) {
     const { token } = request.query;
@@ -88,7 +80,6 @@ export default async function handler(request, response) {
         const { postcardData } = decoded;
         const { sender, recipient } = postcardData;
         
-        // Fetch the live configuration from the database
         const config = await redis.get('postcard-config');
         if (!config) {
             throw new Error("Live configuration not found in database.");
@@ -109,13 +100,11 @@ export default async function handler(request, response) {
             backImage: postcardData.backImageUrl
         });
 
-        // Make the final call to the print API
         await sendToPrintAPI(postcardData);
 
         let subject = confirmationEmailConfig.subject.replace(/{{senderName}}/g, sender.name).replace(/{{recipientName}}/g, recipient.name);
         let body = confirmationEmailConfig.body.replace(/{{senderName}}/g, sender.name).replace(/{{recipientName}}/g, recipient.name);
 
-        // Send the final confirmation email
         const confirmationMsg = {
             to: sender.email,
             from: {
@@ -138,7 +127,6 @@ export default async function handler(request, response) {
         await sgMail.send(confirmationMsg);
 
 
-        // Redirect to the success page
         const proto = request.headers['x-forwarded-proto'] || 'http';
         const host = request.headers['x-forwarded-host'] || request.headers.host;
         const successUrl = new URL('/success.html', `${proto}://${host}`);

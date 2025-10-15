@@ -1,12 +1,9 @@
-import { Redis } from '@upstash/redis';
+import { Redis } from '@upstash/redis/vercel';
 import jwt from 'jsonwebtoken';
 import sgMail from '@sendgrid/mail';
 
-// Initialize Upstash Redis client and SendGrid
-const redis = new Redis({
-  url: process.env.upstash_pc_REDIS_URL,
-  token: process.env.upstash_pc_KV_REST_API_TOKEN,
-});
+// Initialize Upstash Redis client using the zero-config method and SendGrid
+const redis = Redis.fromEnv();
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 // Helper to parse the request body
@@ -34,7 +31,6 @@ export default async function handler(request, response) {
         const { postcardData } = await parseJSONBody(request);
         const { sender, recipient, emailConfig } = postcardData;
         
-        // Fetch the live configuration, which includes the limits
         const config = await redis.get('postcard-config');
         if (!config || !config.limits) {
              throw new Error("Usage limits are not configured in the database.");
@@ -56,7 +52,6 @@ export default async function handler(request, response) {
         const host = request.headers['x-forwarded-host'] || request.headers.host;
         const verificationUrl = new URL(`/api/verify-and-send?token=${token}`, `${proto}://${host}`).toString();
 
-        // Replace variables in subject and body
         let subject = emailConfig.subject.replace(/{{senderName}}/g, sender.name).replace(/{{recipientName}}/g, recipient.name);
         let body = emailConfig.body.replace(/{{senderName}}/g, sender.name).replace(/{{recipientName}}/g, recipient.name);
 
