@@ -1,11 +1,8 @@
-import { Redis } from '@upstash/redis';
+import { Redis } from '@upstash/redis/vercel';
 import fallbackConfig from '../js/config.js';
 
-// Initialize the Upstash Redis client directly
-const redis = new Redis({
-  url: process.env.upstash_pc_KV_REST_API_URL,
-  token: process.env.upstash_pc_KV_REST_API_TOKEN,
-});
+// Initialize the Upstash Redis client using the zero-config method
+const redis = Redis.fromEnv();
 
 export default async function handler(request, response) {
     let config;
