@@ -21,10 +21,6 @@ const appState = {
         width: 200,
         color: '#FFFFFF',
         rotation: 0
-    },
-    apiKeys: {
-        recaptchaSiteKey: '',
-        pixabayApiKey: ''
     }
 };
 
