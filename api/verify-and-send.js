@@ -9,7 +9,7 @@ const redis = new Redis({
 });
 
 // Makes the actual API call to the Zap-Post print service
-async function sendToPrintAPI(postcardData, config) {
+async function sendToPrintAPI(postcardData) {
     console.log("Attempting to send to Zap-Post API");
 
     const { sender, recipient, frontImageUrl, backImageUrl } = postcardData;
@@ -18,9 +18,6 @@ async function sendToPrintAPI(postcardData, config) {
     if (!ZAPPOST_USERNAME || !ZAPPOST_PASSWORD || !ZAPPOST_CAMPAIGN_ID) {
         throw new Error("Missing required Zap-Post environment variables.");
     }
-    
-    // Get the postcard promo image URL from the live config
-    const postcardPromoImageUrl = config.postcardPromo.imageURL;
 
     const customerId = `${sender.email}${recipient.postcode.replace(/\s/g, '')}`;
 
@@ -48,8 +45,7 @@ async function sendToPrintAPI(postcardData, config) {
                 customdata: {
                     "front": frontImageUrl,
                     "message": backImageUrl,
-                    "sender": sender.name,
-                    "promo": postcardPromoImageUrl
+                    "sender": sender.name
                 }
             }
         ]
@@ -113,8 +109,8 @@ export default async function handler(request, response) {
             backImage: postcardData.backImageUrl
         });
 
-        // Make the final call to the print API, passing in the full live config
-        await sendToPrintAPI(postcardData, config);
+        // Make the final call to the print API
+        await sendToPrintAPI(postcardData);
 
         let subject = confirmationEmailConfig.subject.replace(/{{senderName}}/g, sender.name).replace(/{{recipientName}}/g, recipient.name);
         let body = confirmationEmailConfig.body.replace(/{{senderName}}/g, sender.name).replace(/{{recipientName}}/g, recipient.name);
