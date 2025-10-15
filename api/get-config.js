@@ -38,3 +38,4 @@ export default async function handler(request, response) {
         return response.status(200).json(config); // Still return a valid config object on error
     }
 }
+
