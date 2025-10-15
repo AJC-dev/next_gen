@@ -1,10 +1,7 @@
-import { Redis } from '@upstash/redis';
+import { Redis } from '@upstash/redis/vercel';
 
-// Initialize the Upstash Redis client directly
-const redis = new Redis({
-  url: process.env.upstash_pc_REDIS_URL,
-  token: process.env.upstash_pc_KV_REST_API_TOKEN,
-});
+// Initialize the Upstash Redis client using the zero-config method
+const redis = Redis.fromEnv();
 
 // Helper function to parse the request body stream into a JSON object
 function parseJSONBody(request) {
