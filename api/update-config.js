@@ -1,9 +1,5 @@
-import { Redis } from '@upstash/redis/vercel';
+import { sql } from '@vercel/postgres';
 
-// Initialize the Upstash Redis client using the zero-config method
-const redis = Redis.fromEnv();
-
-// Helper function to parse the request body stream into a JSON object
 function parseJSONBody(request) {
   return new Promise((resolve, reject) => {
     let body = '';
@@ -35,14 +31,20 @@ export default async function handler(request, response) {
     try {
         const newConfig = await parseJSONBody(request);
         
-        await redis.set('postcard-config', newConfig);
+        // Use JSON.stringify to pass the object correctly to the SQL query
+        await sql`
+            INSERT INTO configuration (id, settings)
+            VALUES (1, ${JSON.stringify(newConfig)})
+            ON CONFLICT (id) DO UPDATE
+            SET settings = EXCLUDED.settings;
+        `;
 
-        console.log("Successfully saved new configuration to Upstash.");
+        console.log("Successfully saved new configuration to Postgres.");
 
         return response.status(200).json({ message: 'Configuration saved successfully.' });
 
     } catch (error) {
-        console.error('Error saving configuration to Upstash:', error);
+        console.error('Error saving configuration to Postgres:', error);
         const errorMessage = error instanceof Error ? error.message : String(error);
         return response.status(500).json({ message: 'Error saving configuration.', details: errorMessage });
     }

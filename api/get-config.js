@@ -1,22 +1,19 @@
-import { Redis } from '@upstash/redis/vercel';
+import { sql } from '@vercel/postgres';
 import fallbackConfig from '../js/config.js';
-
-// Initialize the Upstash Redis client using the zero-config method
-const redis = Redis.fromEnv();
 
 export default async function handler(request, response) {
     let config;
     try {
-        // 1. Try to fetch the main configuration from the database
-        const dbConfig = await redis.get('postcard-config');
-        if (dbConfig) {
-            config = dbConfig;
+        const { rows } = await sql`SELECT settings FROM configuration WHERE id = 1;`;
+        
+        if (rows.length > 0 && Object.keys(rows[0].settings).length > 0) {
+            config = rows[0].settings;
         } else {
-            // 2. If no config is in the DB, use the local file as the base
+            // If no config is in the DB, use the local file as the base
             config = fallbackConfig;
         }
 
-        // 3. Securely merge in the server-side environment variables
+        // Securely merge in the server-side environment variables for API keys
         config.apiKeys = {
             recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY,
             pixabayApiKey: process.env.PIXABAY_API_KEY,
@@ -25,14 +22,14 @@ export default async function handler(request, response) {
         return response.status(200).json(config);
 
     } catch (error) {
-        console.error('Error fetching configuration:', error);
-        // Fallback to local config on any error
+        console.error('Error fetching configuration from Postgres:', error);
+        // On any database error, gracefully fall back to the default config
         let config = fallbackConfig;
          config.apiKeys = {
             recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY,
             pixabayApiKey: process.env.PIXABAY_API_KEY,
         };
-        return response.status(200).json(config); // Still return a valid config object on error
+        return response.status(200).json(config); // Always return a valid config object
     }
 }
 

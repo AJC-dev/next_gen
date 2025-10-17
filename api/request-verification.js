@@ -1,12 +1,9 @@
-import { Redis } from '@upstash/redis/vercel';
+import { sql } from '@vercel/postgres';
 import jwt from 'jsonwebtoken';
 import sgMail from '@sendgrid/mail';
 
-// Initialize Upstash Redis client using the zero-config method and SendGrid
-const redis = Redis.fromEnv();
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-// Helper to parse the request body
 function parseJSONBody(request) {
   return new Promise((resolve, reject) => {
     let body = '';
@@ -31,16 +28,21 @@ export default async function handler(request, response) {
         const { postcardData } = await parseJSONBody(request);
         const { sender, recipient, emailConfig } = postcardData;
         
-        const config = await redis.get('postcard-config');
+        const { rows } = await sql`SELECT settings FROM configuration WHERE id = 1;`;
+        const config = rows[0]?.settings;
+        
         if (!config || !config.limits) {
              throw new Error("Usage limits are not configured in the database.");
         }
         const { postcardLimit, limitDays } = config.limits;
 
-        const userKey = `postcards:${sender.email}`;
-        const now = Date.now();
-        const cutoff = now - (limitDays * 24 * 60 * 60 * 1000);
-        const recentPostcardsCount = await redis.zcount(userKey, cutoff, now);
+        const cutoffDate = new Date(Date.now() - limitDays * 24 * 60 * 60 * 1000);
+        
+        const { rows: logRows } = await sql`
+            SELECT COUNT(*) FROM postcard_logs 
+            WHERE sender_email = ${sender.email} AND sent_at > ${cutoffDate.toISOString()};
+        `;
+        const recentPostcardsCount = parseInt(logRows[0].count, 10);
         
         if (recentPostcardsCount >= postcardLimit) {
             return response.status(429).json({ message: `Usage limit reached. You can send ${postcardLimit} postcards every ${limitDays} days.` });

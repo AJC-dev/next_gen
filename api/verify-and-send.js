@@ -1,9 +1,6 @@
-import { Redis } from '@upstash/redis/vercel';
+import { sql } from '@vercel/postgres';
 import jwt from 'jsonwebtoken';
 import sgMail from '@sendgrid/mail';
-
-// Initialize Upstash Redis client using the zero-config method
-const redis = Redis.fromEnv();
 
 // Makes the actual API call to the Zap-Post print service
 async function sendToPrintAPI(postcardData) {
@@ -14,8 +11,15 @@ async function sendToPrintAPI(postcardData) {
         throw new Error("Missing required Zap-Post environment variables.");
     }
 
+    // Fetch the live config to get the promo image URL
+    const { rows } = await sql`SELECT settings FROM configuration WHERE id = 1;`;
+    const config = rows[0]?.settings;
+    const postcardPromoImageUrl = config?.postcardPromo?.imageURL || "";
+
+
     const customerId = `${sender.email}${recipient.postcode.replace(/\s/g, '')}`;
 
+    // Structure the payload according to Zap-Post's API documentation
     const apiPayload = {
         campaignId: ZAPPOST_CAMPAIGN_ID,
         scheduledSendDateId: "",
@@ -39,7 +43,8 @@ async function sendToPrintAPI(postcardData) {
                 customdata: {
                     "front": frontImageUrl,
                     "message": backImageUrl,
-                    "sender": sender.name
+                    "sender": sender.name,
+                    "promo": postcardPromoImageUrl
                 }
             }
         ]
@@ -57,7 +62,7 @@ async function sendToPrintAPI(postcardData) {
         body: JSON.stringify(apiPayload)
     });
 
-    if (!response.ok) {
+    if (!response.ok) { // Check for non-2xx status codes
         const errorBody = await response.text();
         throw new Error(`Failed to send postcard to print API. Status: ${response.status}. Body: ${errorBody}`);
     }
@@ -66,7 +71,9 @@ async function sendToPrintAPI(postcardData) {
     return response.json();
 }
 
+
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
 
 export default async function handler(request, response) {
     const { token } = request.query;
@@ -80,31 +87,36 @@ export default async function handler(request, response) {
         const { postcardData } = decoded;
         const { sender, recipient } = postcardData;
         
-        const config = await redis.get('postcard-config');
+        // Fetch the live configuration from the database
+        const { rows } = await sql`SELECT settings FROM configuration WHERE id = 1;`;
+        const config = rows[0]?.settings;
         if (!config) {
             throw new Error("Live configuration not found in database.");
         }
         const { confirmationEmail: confirmationEmailConfig } = config;
         
-        const userKey = `postcards:${sender.email}`;
-        const now = Date.now();
-        const postcardId = `${userKey}:${now}`;
+        // Log the postcard send event
+        await sql`
+            INSERT INTO postcard_logs (
+                sender_name, sender_email, 
+                recipient_name, recipient_line1, recipient_line2, recipient_city, recipient_postcode, recipient_country, 
+                front_image_url, back_image_url
+            )
+            VALUES (
+                ${sender.name}, ${sender.email}, 
+                ${recipient.name}, ${recipient.line1}, ${recipient.line2 || ''}, ${recipient.city}, ${recipient.postcode}, ${recipient.country},
+                ${postcardData.frontImageUrl}, ${postcardData.backImageUrl}
+            );
+        `;
 
-        await redis.zadd(userKey, { score: now, member: postcardId });
-        
-        await redis.set(postcardId, {
-            sender: sender,
-            recipient: recipient,
-            sentAt: now,
-            frontImage: postcardData.frontImageUrl,
-            backImage: postcardData.backImageUrl
-        });
 
+        // Make the final call to the print API
         await sendToPrintAPI(postcardData);
 
         let subject = confirmationEmailConfig.subject.replace(/{{senderName}}/g, sender.name).replace(/{{recipientName}}/g, recipient.name);
         let body = confirmationEmailConfig.body.replace(/{{senderName}}/g, sender.name).replace(/{{recipientName}}/g, recipient.name);
 
+        // Send the final confirmation email
         const confirmationMsg = {
             to: sender.email,
             from: {
@@ -127,6 +139,7 @@ export default async function handler(request, response) {
         await sgMail.send(confirmationMsg);
 
 
+        // Redirect to the success page
         const proto = request.headers['x-forwarded-proto'] || 'http';
         const host = request.headers['x-forwarded-host'] || request.headers.host;
         const successUrl = new URL('/success.html', `${proto}://${host}`);
