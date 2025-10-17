@@ -1,5 +1,3 @@
-// This new version will hide the loading overlay once it has populated the content.
-
 import fallbackConfig from './config.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -41,6 +39,7 @@ function applySuccessPageConfig(successConfig) {
     const button = document.getElementById('success-button');
     button.textContent = successConfig.buttonText;
     button.style.backgroundColor = successConfig.buttonColor;
+    button.style.color = successConfig.buttonTextColor;
 
     document.getElementById('success-promo-text').textContent = successConfig.promoText;
 
@@ -49,6 +48,6 @@ function applySuccessPageConfig(successConfig) {
 
     const promoImage = document.getElementById('success-promo-image');
     promoImage.src = successConfig.promoImageURL;
-    promoImage.alt = `${successConfig.promoLinkText || 'Promo'} Image`;
+    promoImage.alt = "Promo Image";
 }
 
